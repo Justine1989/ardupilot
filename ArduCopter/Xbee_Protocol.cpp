@@ -29,9 +29,10 @@ uint16_t Xbee_Protocol::send_protocol(const uint8_t *message, uint16_t len)
 	return send_buf_len;
 }
 
-int16_t Xbee_Protocol::receive_protocol(uint8_t *buf, uint16_t len, uint8_t *message, uint16_t *address)
+int16_t Xbee_Protocol::receive_protocol(uint8_t *message, uint16_t *address)
 {
-	uint8_t sum = 0;
+	receive_buf_len = _uart->available();
+	uint8_t buf, sum = 0;
 	enum STATUS{
 		START,
 		LENGTH,
@@ -44,50 +45,57 @@ int16_t Xbee_Protocol::receive_protocol(uint8_t *buf, uint16_t len, uint8_t *mes
 		END,
 		ERROR
 	} status = ERROR;
-	uint16_t message_len{4}, j{0};
-	for(size_t i = 0; i < len; i++){
-		if(buf[i]==0x7E)
+	uint16_t message_len{4};
+	for(size_t i = 0; i < receive_buf_len; i++){
+		buf = _uart->read();
+		if(buf==0x7E)
 			status = START;
 		switch(status){
 			case START:
 				status = LENGTH;
 				break;
 			case LENGTH:
-				message_len = buf[i++];
+				message_len = buf;
 				message_len <<= 8;
-				message_len |= buf[i];
+				buf = _uart->read();
+				message_len |= buf;
 				status = FRAME;
 				break;
 			case FRAME:
-				if(buf[i]==0x81){
-					sum += buf[i];
+				if(buf==0x81){
+					sum += buf;
 					status = ADDRESS;
 				}
 				break;
 			case ADDRESS:
-				sum += buf[i];
-				*address = buf[i++];
+				sum += buf;
+				*address = buf;
 				*address <<= 8;
-				sum += buf[i];
-				*address |= buf[i];
+				buf = _uart->read();
+				sum += buf;
+				*address |= buf;
 				status = RSSI;
 				break;
 			case RSSI:
-				sum += buf[i];
+				sum += buf;
 				status = OPTIONS;
 				break;
 			case OPTIONS:
-				sum += buf[i];
+				sum += buf;
 				status = DATA;
 				break;
 			case DATA:
-				sum += buf[i];
-				message[j++] = buf[i];
-				if(j>=message_len-5)
-					status = CHECKSUM;
+				sum += buf;
+				message[0] = buf;
+				for(size_t j = 1; j<(message_len-5); j++){
+					buf = _uart->read();
+					sum += buf;
+					message[j] = buf;
+				}
+				status = CHECKSUM;
 				break;
 			case CHECKSUM:
-				if(0xFF-sum==buf[i])
+				if(0xFF-sum==buf)
 					status = END;
 				else
 					status = ERROR;
@@ -95,6 +103,8 @@ int16_t Xbee_Protocol::receive_protocol(uint8_t *buf, uint16_t len, uint8_t *mes
 			default:
 				break;
 		}
+		if(status==END)
+			break;
 	}
 	if(status==END)
 		return (int16_t)message_len-5;
@@ -113,12 +123,7 @@ void Xbee_Protocol::update_receive(void)
 	static uint32_t time_{0};
 	uint32_t start_t = AP_HAL::micros();
 	
-	receive_buf_len = _uart->available();
-	
-	for(size_t i = 0; i < receive_buf_len; i++)
-		receive_buf[i] = _uart->read();
-	
-	int16_t rev_len = receive_protocol(receive_buf, receive_buf_len, reveive_msg, &receive_adr);
+	int16_t rev_len = receive_protocol(reveive_msg, &receive_adr);
 	if(rev_len>0)
 		receive_len = (uint16_t)rev_len;
 		

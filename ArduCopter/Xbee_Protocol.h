@@ -17,7 +17,7 @@ public:
 	}
 
 	uint16_t send_protocol(const uint8_t *message, uint16_t len);
-	int16_t receive_protocol(uint8_t *buf, uint16_t len, uint8_t *message, uint16_t *address);
+	int16_t receive_protocol(uint8_t *message, uint16_t *address);
 	
 	uint16_t xbee_write(void);
 	
