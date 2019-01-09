@@ -21,6 +21,9 @@ public:
 	
 	uint16_t xbee_write(void);
 	
+	void update_receive(void);
+	void update_send(void);
+
 private:
 
 	AP_HAL::UARTDriver* _uart;
@@ -34,8 +37,8 @@ private:
 	uint16_t receive_len;
 	uint16_t receive_adr;
 	
-	void update_receive(void);
-	void update_send(void);
 };
+
+extern Xbee_Protocol xbee;
 
 //void print_buf(xbee_protocol& x);

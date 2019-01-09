@@ -273,6 +273,8 @@ void Copter::init_ardupilot()
 
     // flag that initialisation has completed
     ap.initialised = true;
+
+    xbee.init_xbee(hal.uartE);
 }
 
 

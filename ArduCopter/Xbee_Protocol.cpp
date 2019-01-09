@@ -110,6 +110,9 @@ uint16_t Xbee_Protocol::xbee_write(void)
 
 void Xbee_Protocol::update_receive(void)
 {
+	static uint32_t time_{0};
+	uint32_t start_t = AP_HAL::micros();
+	
 	receive_buf_len = _uart->available();
 	
 	for(size_t i = 0; i < receive_buf_len; i++)
@@ -118,6 +121,22 @@ void Xbee_Protocol::update_receive(void)
 	int16_t rev_len = receive_protocol(receive_buf, receive_buf_len, reveive_msg, &receive_adr);
 	if(rev_len>0)
 		receive_len = (uint16_t)rev_len;
+		
+	time_ = AP_HAL::micros() - start_t;
+		
+	if(rev_len>0){
+		reveive_msg[receive_len+1] = (uint8_t)time_&0xFF;
+		reveive_msg[receive_len] = (uint8_t)time_>>8;
+		send_protocol(reveive_msg, receive_len+2);
+		xbee_write();
+	}
+}
+
+void Xbee_Protocol::update_send(void)
+{
+	uint8_t send_msg[]{'b','a','f','s'};
+	send_protocol(send_msg, sizeof(send_msg));
+	xbee_write();
 }
 
 Xbee_Protocol xbee;

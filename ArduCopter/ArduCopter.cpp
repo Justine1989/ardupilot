@@ -194,6 +194,8 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if OSD_ENABLED == ENABLED
     SCHED_TASK(publish_osd_info, 1, 10),
 #endif
+	SCHED_TASK_CLASS(Xbee_Protocol,   &xbee,   update_receive, 100, 200),
+	//SCHED_TASK_CLASS(Xbee_Protocol,   &xbee,   update_send, 1, 180),
 };
 
 constexpr int8_t Copter::_failsafe_priorities[7];
