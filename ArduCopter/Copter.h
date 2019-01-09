@@ -183,6 +183,8 @@
 #include <SITL/SITL.h>
 #endif
 
+#include "Xbee_Protocol.h"
+
 
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
