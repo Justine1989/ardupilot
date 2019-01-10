@@ -33,7 +33,6 @@ int16_t Xbee_Protocol::receive_protocol(uint8_t *message, uint16_t *address)
 {
 	//uint32_t start_time = AP_HAL::micros();
 	
-	receive_buf_len = _uart->available();
 	uint8_t sum = 0;
 	
 	while(_uart->available() > 8){
@@ -44,14 +43,14 @@ int16_t Xbee_Protocol::receive_protocol(uint8_t *message, uint16_t *address)
             if(receive_buf[3] == 0x81){
             	sum += receive_buf[3];
             	for(uint16_t i = 4; i < 8; i++){
-            		sum += receive_buf[i];
                 	receive_buf[i] = _uart->read();
+                	sum += receive_buf[i];
                 }
         		receive_adr = receive_buf[4] * 256 + receive_buf[5];
             	receive_len = receive_buf[1] * 256 + receive_buf[2] - 5;
             	for(uint16_t i = 8; i < receive_len + 8; i++){
-            		sum += receive_buf[i];
             		receive_buf[i] = _uart->read();
+            		sum += receive_buf[i];
             	}
             	if(0xFF-sum == _uart->read())
             		return receive_len;
@@ -80,7 +79,7 @@ void Xbee_Protocol::update_receive(void)
 		
 	time_ = AP_HAL::micros() - start_t;
 		
-	if(rev_len>0){
+	if(rev_len!=0){
 		uint8_t send_time[2];
 		send_time[0] = (uint8_t)time_>>8;
 		send_time[1] = (uint8_t)time_&0xFF;
