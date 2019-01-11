@@ -28,6 +28,8 @@ public:
 		_uart = uart;
 		if (_uart != nullptr)
         	_uart->begin(57600);
+        memset(xbee_data, 0, sizeof(xbee_data));
+        memset(xbee_data_len, 0, sizeof(xbee_data_len));
 	}
 
 	void update_receive(void);
@@ -51,6 +53,7 @@ private:
 	
 	uint8_t xbee_data[NEIGHBOUR_NUM][XBEEMAXLEN];
 	uint16_t xbee_data_len[NEIGHBOUR_NUM];
+	uint16_t xbee_nei_mask = 0;
 	
 };
 

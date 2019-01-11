@@ -49,9 +49,10 @@ int8_t Xbee_Protocol::receive_protocol(void)
                 }
         		receive_adr = receive_buf[4] * 256 + receive_buf[5];
         		int8_t nei_index = get_nei_index(receive_adr);
-        		if(nei_index>=0)
+        		if(nei_index>=0){
         			xbee_data_len[nei_index] = receive_len;
-        		else
+        			xbee_nei_mask |= (1U<<nei_index);
+        		}else
         			return 0;
             	for(uint16_t i = 8; i < receive_len + 8; i++){
             		xbee_data[nei_index][i-8] = _uart->read();
@@ -108,14 +109,18 @@ void Xbee_Protocol::update_receive(void)
 	uint32_t start_t = AP_HAL::micros();
 	
 	int8_t rev_num = receive_protocol();
-		
+	
 	time_ = AP_HAL::micros() - start_t;
 		
-	if(rev_num > 0){
+	if(rev_num != 0){
+		uint8_t i = 0;
+		for(; i<8; i++)
+			if(xbee_nei_mask&(1U<<i))
+				break;
 		uint8_t send_time[3];
-		send_time[0] = (uint8_t)time_>>8;
-		send_time[1] = (uint8_t)time_&0xFF;
-		send_time[2] = receive_num;
+		send_time[0] = (uint8_t)(xbee_data_len[i]);
+		send_time[1] = (uint8_t)(time_&0xFF);
+		send_time[2] = rev_num;
 		send_protocol(send_time, 3);
 		xbee_write();
 	}
