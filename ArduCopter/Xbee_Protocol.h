@@ -30,6 +30,7 @@ public:
         	_uart->begin(57600);
         memset(xbee_data, 0, sizeof(xbee_data));
         memset(xbee_data_len, 0, sizeof(xbee_data_len));
+        memset(xbee_data_num, 0, sizeof(xbee_data_num));
 	}
 
 	void update_receive(void);
@@ -39,8 +40,8 @@ private:
 
 	int8_t get_nei_index(uint16_t addr);
 
-	uint16_t send_protocol(const uint8_t *message, uint16_t len);
-	int8_t receive_protocol(void);
+	uint16_t send_protocol(const uint16_t addr, const uint8_t *message, uint16_t len);
+	uint8_t receive_protocol(void);
 	uint16_t xbee_write(void);
 
 	AP_HAL::UARTDriver* _uart;
@@ -53,6 +54,7 @@ private:
 	
 	uint8_t xbee_data[NEIGHBOUR_NUM][XBEEMAXLEN];
 	uint16_t xbee_data_len[NEIGHBOUR_NUM];
+	uint16_t xbee_data_num[NEIGHBOUR_NUM];
 	uint16_t xbee_nei_mask = 0;
 	
 };

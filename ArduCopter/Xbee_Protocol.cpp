@@ -1,7 +1,7 @@
 #include "Xbee_Protocol.h"
 #include "Copter.h"
 
-uint16_t Xbee_Protocol::send_protocol(const uint8_t *message, uint16_t len)
+uint16_t Xbee_Protocol::send_protocol(const uint16_t addr, const uint8_t *message, uint16_t len)
 {
 	uint8_t sum = 0;
 	uint16_t i;
@@ -13,9 +13,9 @@ uint16_t Xbee_Protocol::send_protocol(const uint8_t *message, uint16_t len)
 	sum += send_buf[3];
 	send_buf[4] = 0x00;
 	sum += send_buf[4];
-	send_buf[5] = target_adr >> 8;
+	send_buf[5] = addr >> 8;
 	sum += send_buf[5];
-	send_buf[6] = target_adr & 0xFF;
+	send_buf[6] = addr & 0xFF;
 	sum += send_buf[6];
 	send_buf[7] = 0x00;
 	sum += send_buf[7];
@@ -29,20 +29,21 @@ uint16_t Xbee_Protocol::send_protocol(const uint8_t *message, uint16_t len)
 	return send_buf_len;
 }
 
-int8_t Xbee_Protocol::receive_protocol(void)
+uint8_t Xbee_Protocol::receive_protocol(void)
 {
 	//uint32_t start_time = AP_HAL::micros();
+	uint8_t frame_num{0};
 	uint8_t sum{0}, receive_buf[8];
 	uint16_t receive_len{0}, receive_adr{0};
 	
-	while(_uart->available() > 8){
+	while(_uart->available()>8){
 		receive_buf[0] = _uart->read();
 		if(receive_buf[0] == 0x7E){
 			for(uint8_t i = 1; i < 4; i++)
             	receive_buf[i] = _uart->read();
             if(receive_buf[3] == 0x81){
             	receive_len = receive_buf[1] * 256 + receive_buf[2] - 5;
-            	sum += receive_buf[3];
+            	sum = receive_buf[3];
             	for(uint16_t i = 4; i < 8; i++){
                 	receive_buf[i] = _uart->read();
                 	sum += receive_buf[i];
@@ -53,20 +54,19 @@ int8_t Xbee_Protocol::receive_protocol(void)
         			xbee_data_len[nei_index] = receive_len;
         			xbee_nei_mask |= (1U<<nei_index);
         		}else
-        			return 0;
-            	for(uint16_t i = 8; i < receive_len + 8; i++){
-            		xbee_data[nei_index][i-8] = _uart->read();
-            		sum += xbee_data[nei_index][i-8];
+        			continue;
+            	for(uint16_t i = 0; i < receive_len; i++){
+            		xbee_data[nei_index][i] = _uart->read();
+            		sum += xbee_data[nei_index][i];
             	}
             	if(0xFF-sum == _uart->read()){
-            		sum = 0;
-            		return 1;
-           		}else
-           			return -1;
+            		frame_num++;
+            		xbee_data_num[nei_index]++;
+            	}
             }
         }
 	}
-	return 0;
+	return frame_num;
 }
 
 uint16_t Xbee_Protocol::xbee_write(void)
@@ -105,32 +105,33 @@ int8_t Xbee_Protocol::get_nei_index(uint16_t addr)
 
 void Xbee_Protocol::update_receive(void)
 {
-	static uint32_t time_{0};
-	uint32_t start_t = AP_HAL::micros();
+	//static uint32_t time_{0};
+	//uint32_t start_t = AP_HAL::micros();
 	
-	int8_t rev_num = receive_protocol();
+	receive_protocol();
 	
-	time_ = AP_HAL::micros() - start_t;
-		
-	if(rev_num != 0){
-		uint8_t i = 0;
-		for(; i<8; i++)
-			if(xbee_nei_mask&(1U<<i))
-				break;
-		uint8_t send_time[3];
-		send_time[0] = (uint8_t)(xbee_data_len[i]);
-		send_time[1] = (uint8_t)(time_&0xFF);
-		send_time[2] = rev_num;
-		send_protocol(send_time, 3);
-		xbee_write();
-	}
+	//time_ = AP_HAL::micros() - start_t;
+	
 }
 
 void Xbee_Protocol::update_send(void)
 {
-	uint8_t send_msg[]{'b','a','f','s'};
-	send_protocol(send_msg, sizeof(send_msg));
-	xbee_write();
+	uint8_t send_msg[2];
+	static uint16_t old_num[2]{0,0};
+	if(old_num[0]<xbee_data_num[0]){
+		send_msg[0] = (uint8_t)(xbee_data_num[0]/256);
+		send_msg[1] = (uint8_t)(xbee_data_num[0]&0xFF);
+		send_protocol(0xE0E0, send_msg, 2);
+		xbee_write();
+	}
+	if(old_num[1]<xbee_data_num[2]){
+		send_msg[0] = (uint8_t)(xbee_data_num[2]/256);
+		send_msg[1] = (uint8_t)(xbee_data_num[2]&0xFF);
+		send_protocol(0xE2E2, send_msg, 2);
+		xbee_write();
+	}
+	old_num[0] = xbee_data_num[0];
+	old_num[1] = xbee_data_num[2];
 }
 
 Xbee_Protocol xbee;
