@@ -29,33 +29,39 @@ uint16_t Xbee_Protocol::send_protocol(const uint8_t *message, uint16_t len)
 	return send_buf_len;
 }
 
-int16_t Xbee_Protocol::receive_protocol(uint8_t *message, uint16_t *address)
+int8_t Xbee_Protocol::receive_protocol(void)
 {
 	//uint32_t start_time = AP_HAL::micros();
-	
-	uint8_t sum = 0;
+	uint8_t sum{0}, receive_buf[8];
+	uint16_t receive_len{0}, receive_adr{0};
 	
 	while(_uart->available() > 8){
 		receive_buf[0] = _uart->read();
 		if(receive_buf[0] == 0x7E){
-			for(uint16_t i = 1; i < 4; i++)
+			for(uint8_t i = 1; i < 4; i++)
             	receive_buf[i] = _uart->read();
             if(receive_buf[3] == 0x81){
+            	receive_len = receive_buf[1] * 256 + receive_buf[2] - 5;
             	sum += receive_buf[3];
             	for(uint16_t i = 4; i < 8; i++){
                 	receive_buf[i] = _uart->read();
                 	sum += receive_buf[i];
                 }
         		receive_adr = receive_buf[4] * 256 + receive_buf[5];
-            	receive_len = receive_buf[1] * 256 + receive_buf[2] - 5;
+        		int8_t nei_index = get_nei_index(receive_adr);
+        		if(nei_index>=0)
+        			xbee_data_len[nei_index] = receive_len;
+        		else
+        			return 0;
             	for(uint16_t i = 8; i < receive_len + 8; i++){
-            		receive_buf[i] = _uart->read();
-            		sum += receive_buf[i];
+            		xbee_data[nei_index][i-8] = _uart->read();
+            		sum += xbee_data[nei_index][i-8];
             	}
-            	if(0xFF-sum == _uart->read())
-            		return receive_len;
-            	else
-            		return -1;
+            	if(0xFF-sum == _uart->read()){
+            		sum = 0;
+            		return 1;
+           		}else
+           			return -1;
             }
         }
 	}
@@ -67,23 +73,50 @@ uint16_t Xbee_Protocol::xbee_write(void)
 	return _uart->write(send_buf, send_buf_len);
 }
 
+int8_t Xbee_Protocol::get_nei_index(uint16_t addr)
+{
+	switch((enum Neighbours_Addr)addr){
+		case NEI0:
+			return 0;
+		case NEI1:
+			return 1;
+		case NEI2:
+			return 2;
+		case NEI3:
+			return 3;
+		case NEI4:
+			return 4;
+		case NEI5:
+			return 5;
+		case NEI6:
+			return 6;
+		case NEI7:
+			return 7;
+		case NEI8:
+			return 8;
+		case NEI9:
+			return 9;
+		default:
+			return -1;
+	}
+}
+
 
 void Xbee_Protocol::update_receive(void)
 {
 	static uint32_t time_{0};
 	uint32_t start_t = AP_HAL::micros();
 	
-	int16_t rev_len = receive_protocol(reveive_msg, &receive_adr);
-	if(rev_len>0)
-		receive_len = (uint16_t)rev_len;
+	int8_t rev_num = receive_protocol();
 		
 	time_ = AP_HAL::micros() - start_t;
 		
-	if(rev_len!=0){
-		uint8_t send_time[2];
+	if(rev_num > 0){
+		uint8_t send_time[3];
 		send_time[0] = (uint8_t)time_>>8;
 		send_time[1] = (uint8_t)time_&0xFF;
-		send_protocol(send_time, 2);
+		send_time[2] = receive_num;
+		send_protocol(send_time, 3);
 		xbee_write();
 	}
 }
@@ -97,10 +130,4 @@ void Xbee_Protocol::update_send(void)
 
 Xbee_Protocol xbee;
 
-/*void print_buf(xbee_protocol& x)
-{
-	for(uint8_t i = 0; i<x.send_buf_len; i++)
-		hal.uartA->printf("%u ", x.send_buf[i]);
-	hal.uartA->printf("\r\n");
-}*/
 
