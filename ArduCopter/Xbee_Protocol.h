@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 
-#define XBEEMAXLEN 300
+#define XBEEMAXLEN 512
 #define NEIGHBOUR_NUM 10
 
 enum Neighbours_Addr : uint16_t {
@@ -22,12 +22,12 @@ enum Neighbours_Addr : uint16_t {
 class Xbee_Protocol{
 public:		
 
-	Xbee_Protocol(uint16_t tag_adr = 0xFFFF):target_adr(tag_adr){}
+	Xbee_Protocol(void){}
 	
 	void init_xbee(AP_HAL::UARTDriver* uart){
 		_uart = uart;
 		if (_uart != nullptr)
-        	_uart->begin(57600);
+        	_uart->begin(57600, 512, 512);
         memset(xbee_data, 0, sizeof(xbee_data));
         memset(xbee_data_len, 0, sizeof(xbee_data_len));
         memset(xbee_data_num, 0, sizeof(xbee_data_num));
@@ -45,17 +45,14 @@ private:
 	uint16_t xbee_write(void);
 
 	AP_HAL::UARTDriver* _uart;
-	uint16_t target_adr;
 	
 	uint8_t send_buf[XBEEMAXLEN];
 	uint16_t send_buf_len;
 	
-	uint8_t receive_num;
-	
-	uint8_t xbee_data[NEIGHBOUR_NUM][XBEEMAXLEN];
-	uint16_t xbee_data_len[NEIGHBOUR_NUM];
-	uint16_t xbee_data_num[NEIGHBOUR_NUM];
-	uint16_t xbee_nei_mask = 0;
+	uint8_t xbee_data[NEIGHBOUR_NUM][XBEEMAXLEN];//The datas of the newest frame.
+	uint16_t xbee_data_len[NEIGHBOUR_NUM];//The length of the newest frame.
+	uint16_t xbee_data_num[NEIGHBOUR_NUM];//The number of all frames which have received so far.
+	uint16_t xbee_nei_mask = 0;//Check which neighbours of UAV that have sent the data and been reveived.
 	
 };
 

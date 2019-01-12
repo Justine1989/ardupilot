@@ -71,7 +71,11 @@ uint8_t Xbee_Protocol::receive_protocol(void)
 
 uint16_t Xbee_Protocol::xbee_write(void)
 {
-	return _uart->write(send_buf, send_buf_len);
+	comm_send_lock((mavlink_channel_t)4);
+	uint16_t send_len = _uart->write(send_buf, send_buf_len);
+	//uint16_t send_len = mavlink_comm_port[4]->write(send_buf, send_buf_len);
+	comm_send_unlock((mavlink_channel_t)4);
+	return send_len;
 }
 
 int8_t Xbee_Protocol::get_nei_index(uint16_t addr)
@@ -108,7 +112,12 @@ void Xbee_Protocol::update_receive(void)
 	//static uint32_t time_{0};
 	//uint32_t start_t = AP_HAL::micros();
 	
-	receive_protocol();
+	/*uint8_t rev_len = */receive_protocol();
+	
+	/*if(rev_len>0){
+		send_protocol(0xE1E1, xbee_data[1], xbee_data_len[1]);
+		xbee_write();
+	}*/
 	
 	//time_ = AP_HAL::micros() - start_t;
 	
@@ -124,14 +133,14 @@ void Xbee_Protocol::update_send(void)
 		send_protocol(0xE0E0, send_msg, 2);
 		xbee_write();
 	}
-	if(old_num[1]<xbee_data_num[2]){
-		send_msg[0] = (uint8_t)(xbee_data_num[2]/256);
-		send_msg[1] = (uint8_t)(xbee_data_num[2]&0xFF);
-		send_protocol(0xE2E2, send_msg, 2);
+	if(old_num[1]<xbee_data_num[1]){
+		send_msg[0] = (uint8_t)(xbee_data_num[1]/256);
+		send_msg[1] = (uint8_t)(xbee_data_num[1]&0xFF);
+		send_protocol(0xE1E1, send_msg, 2);
 		xbee_write();
 	}
 	old_num[0] = xbee_data_num[0];
-	old_num[1] = xbee_data_num[2];
+	old_num[1] = xbee_data_num[1];
 }
 
 Xbee_Protocol xbee;
