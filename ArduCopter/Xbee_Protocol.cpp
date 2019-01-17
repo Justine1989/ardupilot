@@ -53,6 +53,7 @@ uint8_t Xbee_Protocol::receive_protocol(void)
         		if(nei_index>=0){
         			xbee_data_len[nei_index] = receive_len;
         			xbee_nei_mask |= (1U<<nei_index);
+        			//gcs().update_neighbours_mask(xbee_nei_mask);
         		}else
         			continue;
             	for(uint16_t i = 0; i < receive_len; i++){

@@ -1,10 +1,10 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
 
 
 #define XBEEMAXLEN 512
-#define NEIGHBOUR_NUM 10
 
 enum Neighbours_Addr : uint16_t {
 	NEI0 = 0xE0E0,
@@ -18,6 +18,14 @@ enum Neighbours_Addr : uint16_t {
 	NEI8 = 0xE8E8,
 	NEI9 = 0xE9E9
 };
+
+const uint16_t Neighbours_Frame_Len = sizeof(Neighbours_Pos);
+
+union Neighbours_cor{
+	Neighbours_Pos Pose;
+	uint8_t cor_data[Neighbours_Frame_Len];
+};
+
 
 class Xbee_Protocol{
 public:		
@@ -58,4 +66,3 @@ private:
 
 extern Xbee_Protocol xbee;
 
-//void print_buf(xbee_protocol& x);

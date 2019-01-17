@@ -3627,18 +3627,22 @@ void GCS_MAVLINK::send_global_position_int()
 
     Vector3f vel;
     ahrs.get_velocity_NED(vel);
-
-    mavlink_msg_global_position_int_send(
-        chan,
-        AP_HAL::millis(),
-        global_position_current_loc.lat, // in 1E7 degrees
-        global_position_current_loc.lng, // in 1E7 degrees
-        global_position_int_alt(),       // millimeters above ground/sea level
-        global_position_int_relative_alt(), // millimeters above home
-        vel.x * 100,                     // X speed cm/s (+ve North)
-        vel.y * 100,                     // Y speed cm/s (+ve East)
-        vel.z * 100,                     // Z speed cm/s (+ve Down)
-        ahrs.yaw_sensor);                // compass heading in 1/100 degree
+	
+	uint32_t cur_time_32_ = AP_HAL::millis();
+	for(uint8_t i = 0; i<5; i++){
+		uint32_t cur_time_28_ = cur_time_32_ | (uint32_t)i<<28;
+    	mavlink_msg_global_position_int_send(
+        	chan,
+        	cur_time_28_,
+        	global_position_current_loc.lat, // in 1E7 degrees
+        	global_position_current_loc.lng, // in 1E7 degrees
+	        global_position_int_alt(),       // millimeters above ground/sea level
+    	    global_position_int_relative_alt(), // millimeters above home
+    	    vel.x * 100,                     // X speed cm/s (+ve North)
+    	    vel.y * 100,                     // Y speed cm/s (+ve East)
+    	    vel.z * 100,                     // Z speed cm/s (+ve Down)
+    	    ahrs.yaw_sensor);                // compass heading in 1/100 degree
+	}
 }
 
 void GCS_MAVLINK::send_gimbal_report() const

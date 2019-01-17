@@ -163,3 +163,28 @@ void comm_send_unlock(mavlink_channel_t chan)
 {
     chan_locks[(uint8_t)chan].give();
 }
+
+
+
+
+
+Neighbours_Pos* GCS_MAVLINK::update_neighbours_pose(uint16_t index_i)
+{
+	return &(neighbours_pose[index_i]);
+}
+	
+void GCS_MAVLINK::update_neighbours_mask(uint16_t mask)
+{
+	neighbours_mask = mask;
+}
+
+void GCS_MAVLINK::clear_neighbours_mask(void)
+{
+	neighbours_mask = 0;
+}
+
+void GCS_MAVLINK::init_neighbours_pose(void)
+{
+	neighbours_pose = new Neighbours_Pos[NEIGHBOUR_NUM];
+}
+

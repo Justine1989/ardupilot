@@ -32,6 +32,8 @@
 #define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
 
+#define NEIGHBOUR_NUM 10
+struct Neighbours_Pos;
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
 /// please keep each MSG_ to a single MAVLink message. If need be
@@ -277,6 +279,11 @@ public:
     // vehicle subclass cpp files should define this:
     static const struct stream_entries all_stream_entries[];
 
+	Neighbours_Pos* update_neighbours_pose(uint16_t index_i);
+	void update_neighbours_mask(uint16_t mask);
+	void clear_neighbours_mask(void);
+	void init_neighbours_pose(void);
+	
 protected:
 
     virtual bool in_hil_mode() const { return false; }
@@ -683,7 +690,24 @@ private:
     uint8_t max_slowdown;
 #endif
 
+	uint16_t neighbours_mask = 0;
+	Neighbours_Pos *neighbours_pose;
+
 };
+
+struct Neighbours_Pos{
+	uint32_t time_boot_ms;
+	int32_t lat;
+	int32_t lon;
+	int32_t alt;
+	
+	float relative_alt;
+	float vx;
+	float vy;
+	float vz;
+	float hdg;
+};
+
 
 /// @class GCS
 /// @brief global GCS object
@@ -796,6 +820,7 @@ private:
 
     // timer called to implement pass-thru
     void passthru_timer();
+    
 };
 
 GCS &gcs();
