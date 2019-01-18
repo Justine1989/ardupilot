@@ -28,7 +28,7 @@ union Neighbours_cor{
 
 
 class Xbee_Protocol{
-public:		
+public:
 
 	Xbee_Protocol(void){}
 	
@@ -36,7 +36,7 @@ public:
 		_uart = uart;
 		if (_uart != nullptr)
         	_uart->begin(57600, 512, 512);
-        memset(xbee_data, 0, sizeof(xbee_data));
+        //memset(xbee_data, 0, sizeof(xbee_data));
         memset(xbee_data_len, 0, sizeof(xbee_data_len));
         memset(xbee_data_num, 0, sizeof(xbee_data_num));
 	}
@@ -57,11 +57,11 @@ private:
 	uint8_t send_buf[XBEEMAXLEN];
 	uint16_t send_buf_len;
 	
-	uint8_t xbee_data[NEIGHBOUR_NUM][XBEEMAXLEN];//The datas of the newest frame.
+	//uint8_t xbee_data[NEIGHBOUR_NUM][XBEEMAXLEN];//The datas of the newest frame.
 	uint16_t xbee_data_len[NEIGHBOUR_NUM];//The length of the newest frame.
 	uint16_t xbee_data_num[NEIGHBOUR_NUM];//The number of all frames which have received so far.
 	uint16_t xbee_nei_mask = 0;//Check which neighbours of UAV that have sent the data and been reveived.
-	
+	uint8_t *xbee_data;
 };
 
 extern Xbee_Protocol xbee;

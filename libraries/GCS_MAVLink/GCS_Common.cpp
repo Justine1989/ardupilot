@@ -1963,6 +1963,7 @@ void GCS::setup_uarts(AP_SerialManager &serial_manager)
     for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
         chan(i).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
     }
+    init_neighbours_pose();
 }
 
 // report battery2 state
@@ -3628,21 +3629,40 @@ void GCS_MAVLINK::send_global_position_int()
     Vector3f vel;
     ahrs.get_velocity_NED(vel);
 	
+	uint16_t mask = neighbours_mask;
 	uint32_t cur_time_32_ = AP_HAL::millis();
-	for(uint8_t i = 0; i<5; i++){
-		uint32_t cur_time_28_ = cur_time_32_ | (uint32_t)i<<28;
-    	mavlink_msg_global_position_int_send(
-        	chan,
-        	cur_time_28_,
-        	global_position_current_loc.lat, // in 1E7 degrees
-        	global_position_current_loc.lng, // in 1E7 degrees
-	        global_position_int_alt(),       // millimeters above ground/sea level
-    	    global_position_int_relative_alt(), // millimeters above home
-    	    vel.x * 100,                     // X speed cm/s (+ve North)
-    	    vel.y * 100,                     // Y speed cm/s (+ve East)
-    	    vel.z * 100,                     // Z speed cm/s (+ve Down)
-    	    ahrs.yaw_sensor);                // compass heading in 1/100 degree
+	for(uint8_t i = 0; i < NEIGHBOUR_NUM; i++){
+		if(i!=0&&!((mask>>i)&1))
+			continue;
+		if(i==0){
+			uint32_t cur_time_28_ = cur_time_32_ | (uint32_t)i<<28;
+    		mavlink_msg_global_position_int_send(
+        		chan,
+        		cur_time_28_,
+        		global_position_current_loc.lat, // in 1E7 degrees
+        		global_position_current_loc.lng, // in 1E7 degrees
+	        	global_position_int_alt(),       // millimeters above ground/sea level
+    	    	global_position_int_relative_alt(), // millimeters above home
+    	    	vel.x * 100,                     // X speed cm/s (+ve North)
+    	    	vel.y * 100,                     // Y speed cm/s (+ve East)
+    	    	vel.z * 100,                     // Z speed cm/s (+ve Down)
+    	    	ahrs.yaw_sensor);                // compass heading in 1/100 degree
+    	}else{
+    		uint32_t cur_time_28_ = neighbours_pose[i].time_boot_ms | (uint32_t)i<<28;
+    		mavlink_msg_global_position_int_send(
+        		chan,
+        		cur_time_28_,
+        		neighbours_pose[i].lat, // in 1E7 degrees
+        		neighbours_pose[i].lon, // in 1E7 degrees
+	        	neighbours_pose[i].alt,       // millimeters above ground/sea level
+    	    	neighbours_pose[i].relative_alt, // millimeters above home
+    	    	neighbours_pose[i].vx * 100,     // X speed cm/s (+ve North)
+    	    	neighbours_pose[i].vy * 100,     // Y speed cm/s (+ve East)
+    	    	neighbours_pose[i].vz * 100,     // Z speed cm/s (+ve Down)
+    	    	neighbours_pose[i].hdg);         // compass heading in 1/100 degree
+    	}
 	}
+	clear_neighbours_mask();
 }
 
 void GCS_MAVLINK::send_gimbal_report() const

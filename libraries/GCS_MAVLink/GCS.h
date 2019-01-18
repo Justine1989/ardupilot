@@ -279,11 +279,6 @@ public:
     // vehicle subclass cpp files should define this:
     static const struct stream_entries all_stream_entries[];
 
-	Neighbours_Pos* update_neighbours_pose(uint16_t index_i);
-	void update_neighbours_mask(uint16_t mask);
-	void clear_neighbours_mask(void);
-	void init_neighbours_pose(void);
-	
 protected:
 
     virtual bool in_hil_mode() const { return false; }
@@ -690,6 +685,11 @@ private:
     uint8_t max_slowdown;
 #endif
 
+	Neighbours_Pos* update_neighbours_pose(uint16_t index_i);
+	void update_neighbours_mask(uint16_t mask);
+	void clear_neighbours_mask(void);
+	void init_neighbours_pose(void);
+	
 	uint16_t neighbours_mask = 0;
 	Neighbours_Pos *neighbours_pose;
 
@@ -780,6 +780,11 @@ public:
     // update uart pass-thru
     void update_passthru();
 
+	Neighbours_Pos* update_neighbours_pose(uint16_t index_i);
+	void update_neighbours_mask(uint16_t mask);
+	void clear_neighbours_mask(void);
+	void init_neighbours_pose(void);
+	
 private:
 
     static GCS *_singleton;

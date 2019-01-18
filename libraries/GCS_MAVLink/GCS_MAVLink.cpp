@@ -188,3 +188,23 @@ void GCS_MAVLINK::init_neighbours_pose(void)
 	neighbours_pose = new Neighbours_Pos[NEIGHBOUR_NUM];
 }
 
+Neighbours_Pos* GCS::update_neighbours_pose(uint16_t index_i)
+{
+	return chan(0).update_neighbours_pose(index_i);
+}
+	
+void GCS::update_neighbours_mask(uint16_t mask)
+{
+	chan(0).update_neighbours_mask(mask);
+}
+
+void GCS::clear_neighbours_mask(void)
+{
+	chan(0).clear_neighbours_mask();
+}
+
+void GCS::init_neighbours_pose(void)
+{
+	chan(0).init_neighbours_pose();
+}
+

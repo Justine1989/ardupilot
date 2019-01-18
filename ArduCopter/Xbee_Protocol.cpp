@@ -43,6 +43,8 @@ uint8_t Xbee_Protocol::receive_protocol(void)
             	receive_buf[i] = _uart->read();
             if(receive_buf[3] == 0x81){
             	receive_len = receive_buf[1] * 256 + receive_buf[2] - 5;
+            	if(receive_len != Neighbours_Frame_Len)
+            		continue;
             	sum = receive_buf[3];
             	for(uint16_t i = 4; i < 8; i++){
                 	receive_buf[i] = _uart->read();
@@ -50,15 +52,15 @@ uint8_t Xbee_Protocol::receive_protocol(void)
                 }
         		receive_adr = receive_buf[4] * 256 + receive_buf[5];
         		int8_t nei_index = get_nei_index(receive_adr);
-        		if(nei_index>=0){
-        			xbee_data_len[nei_index] = receive_len;
-        			xbee_nei_mask |= (1U<<nei_index);
-        			//gcs().update_neighbours_mask(xbee_nei_mask);
-        		}else
+        		if(nei_index<0)
         			continue;
+        		xbee_data_len[nei_index] = receive_len;
+        		xbee_nei_mask |= (1U<<nei_index);
+        		copter.gcs().update_neighbours_mask(xbee_nei_mask);
+        		xbee_data = (uint8_t*)copter.gcs().update_neighbours_pose(nei_index);
             	for(uint16_t i = 0; i < receive_len; i++){
-            		xbee_data[nei_index][i] = _uart->read();
-            		sum += xbee_data[nei_index][i];
+            		xbee_data[i] = _uart->read();
+            		sum += xbee_data[i];
             	}
             	if(0xFF-sum == _uart->read()){
             		frame_num++;
@@ -126,7 +128,28 @@ void Xbee_Protocol::update_receive(void)
 
 void Xbee_Protocol::update_send(void)
 {
-	uint8_t send_msg[2];
+	AP_AHRS &ahrs = AP::ahrs();
+	struct Location global_position_current_loc;
+	ahrs.get_position(global_position_current_loc); // return value ignored; we send stale data
+    Vector3f vel;
+    ahrs.get_velocity_NED(vel);
+    
+    union Neighbours_cor xbee_send_data;
+    xbee_send_data.Pose.time_boot_ms = AP_HAL::millis();
+    xbee_send_data.Pose.lat = global_position_current_loc.lat;
+    xbee_send_data.Pose.lon = global_position_current_loc.lng;
+    xbee_send_data.Pose.alt = global_position_current_loc.alt*10UL;
+    ahrs.get_relative_position_D_home(xbee_send_data.Pose.relative_alt);
+    xbee_send_data.Pose.relative_alt *= -1000.0f;
+    xbee_send_data.Pose.vx = vel.x * 100;
+    xbee_send_data.Pose.vy = vel.y * 100;
+    xbee_send_data.Pose.vz = vel.z * 100;
+    xbee_send_data.Pose.hdg = ahrs.yaw_sensor;
+    
+    send_protocol(0xFFFF, xbee_send_data.cor_data, Neighbours_Frame_Len);
+    xbee_write();
+    
+	/*uint8_t send_msg[2];
 	static uint16_t old_num[2]{0,0};
 	if(old_num[0]<xbee_data_num[0]){
 		send_msg[0] = (uint8_t)(xbee_data_num[0]/256);
@@ -141,7 +164,7 @@ void Xbee_Protocol::update_send(void)
 		xbee_write();
 	}
 	old_num[0] = xbee_data_num[0];
-	old_num[1] = xbee_data_num[1];
+	old_num[1] = xbee_data_num[1];*/
 }
 
 Xbee_Protocol xbee;
