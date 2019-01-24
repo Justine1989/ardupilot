@@ -114,7 +114,7 @@ void Xbee_Protocol::update_receive(void)
 {
 	//static uint32_t time_{0};
 	//uint32_t start_t = AP_HAL::micros();
-	
+	xbee_nei_mask = 0;
 	/*uint8_t rev_len = */receive_protocol();
 	
 	/*if(rev_len>0){
