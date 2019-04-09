@@ -24,6 +24,10 @@
 #define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
 
+//#ifdef XBEE_CONNECT2
+#define NEIGHBOUR_NUM 10
+struct Neighbours_Pos;
+//#endif
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
 /// please keep each MSG_ to a single MAVLink message. If need be
@@ -213,6 +217,13 @@ public:
 
     // return current packet overhead for a channel
     static uint8_t packet_overhead_chan(mavlink_channel_t chan);
+
+//#ifdef XBEE_CONNECT2
+	Neighbours_Pos* update_neighbours_pose(uint16_t index_i);
+	void update_neighbours_mask(uint16_t mask);
+	void clear_neighbours_mask(void);
+	void init_neighbours_pose(void);
+//#endif
 
 protected:
 
@@ -417,7 +428,28 @@ private:
     void load_signing_key(void);
     bool signing_enabled(void) const;
     static void save_signing_timestamp(bool force_save_now);
+
+//#ifdef XBEE_CONNECT2
+	uint16_t neighbours_mask = 0;
+	Neighbours_Pos *neighbours_pose;
+//#endif
 };
+
+//#ifdef XBEE_CONNECT2
+struct Neighbours_Pos{
+	uint32_t time_boot_ms;
+	int32_t lat;
+	int32_t lon;
+	int32_t alt;
+	
+	float relative_alt;
+	float vx;
+	float vy;
+	float vz;
+	float hdg;
+};
+//#endif
+
 
 /// @class GCS
 /// @brief global GCS object
@@ -481,6 +513,13 @@ public:
 
     // static frsky_telem pointer to support queueing text messages
     AP_Frsky_Telem *frsky_telemetry_p;
+
+//#ifdef XBEE_CONNECT2
+	Neighbours_Pos* update_neighbours_pose(uint16_t index_i);
+	void update_neighbours_mask(uint16_t mask);
+	void clear_neighbours_mask(void);
+	void init_neighbours_pose(void);
+//#endif
 
 private:
 

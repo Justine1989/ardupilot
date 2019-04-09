@@ -159,3 +159,46 @@ bool comm_is_idle(mavlink_channel_t chan)
 	mavlink_status_t *status = mavlink_get_channel_status(chan);
 	return status == nullptr || status->parse_state <= MAVLINK_PARSE_STATE_IDLE;
 }
+
+//#ifdef XBEE_CONNECT2
+Neighbours_Pos* GCS_MAVLINK::update_neighbours_pose(uint16_t index_i)
+{
+	return &(neighbours_pose[index_i]);
+}
+	
+void GCS_MAVLINK::update_neighbours_mask(uint16_t mask)
+{
+	neighbours_mask = mask;
+}
+
+void GCS_MAVLINK::clear_neighbours_mask(void)
+{
+	neighbours_mask = 0;
+}
+
+void GCS_MAVLINK::init_neighbours_pose(void)
+{
+	neighbours_pose = new Neighbours_Pos[NEIGHBOUR_NUM];
+}
+
+Neighbours_Pos* GCS::update_neighbours_pose(uint16_t index_i)
+{
+	return chan(0).update_neighbours_pose(index_i);
+}
+	
+void GCS::update_neighbours_mask(uint16_t mask)
+{
+	chan(0).update_neighbours_mask(mask);
+}
+
+void GCS::clear_neighbours_mask(void)
+{
+	chan(0).clear_neighbours_mask();
+}
+
+void GCS::init_neighbours_pose(void)
+{
+	chan(0).init_neighbours_pose();
+}
+//#endif
+

@@ -2007,6 +2007,18 @@ void Plane::gcs_retry_deferred(void)
     gcs().service_statustext();
 }
 
+//#ifdef XBEE_CONNECT2
+void Plane::_xbee_rc_update(void)
+{
+	_xbee.update_receive();
+}
+
+void Plane::_xbee_sd_update(void)
+{
+	_xbee.update_send();
+}
+//#endif
+
 /*
   return true if we will accept this packet. Used to implement SYSID_ENFORCE
  */

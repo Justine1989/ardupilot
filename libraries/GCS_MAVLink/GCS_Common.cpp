@@ -1323,6 +1323,9 @@ void GCS::setup_uarts(AP_SerialManager &serial_manager)
     for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
         chan(i).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
     }
+//#ifdef XBEE_CONNECT2
+    init_neighbours_pose();
+//#endif
 }
 
 void GCS::handle_interactive_setup()
@@ -1971,3 +1974,4 @@ GCS &gcs()
 {
     return *GCS::instance();
 }
+

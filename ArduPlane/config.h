@@ -121,6 +121,11 @@
 #ifndef FLAP_2_SPEED
  # define FLAP_2_SPEED 0
 #endif
+
+#ifndef XBEE_CONNECT2
+#define XBEE_CONNECT2
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // FLIGHT_MODE
 // FLIGHT_MODE_CHANNEL

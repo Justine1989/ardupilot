@@ -115,6 +115,10 @@
 #include <SITL/SITL.h>
 #endif
 
+//#ifdef XBEE_CONNECT2
+#include "Xbee_Protocol.h"
+//#endif
+
 /*
   a plane specific AP_AdvancedFailsafe class
  */
@@ -148,6 +152,9 @@ public:
     friend class AP_AdvancedFailsafe_Plane;
     friend class AP_Avoidance_Plane;
     friend class GCS_Plane;
+//#ifdef XBEE_CONNECT2
+	friend class Xbee_Protocol;
+//#endif
 
     Plane(void);
 
@@ -1109,6 +1116,12 @@ private:
     // support for AP_Avoidance custom flight mode, AVOID_ADSB
     bool avoid_adsb_init(bool ignore_checks);
     void avoid_adsb_run();
+
+//#ifdef XBEE_CONNECT2
+	Xbee_Protocol _xbee;
+	void _xbee_rc_update(void);
+	void _xbee_sd_update(void);
+//#endif
 
 public:
     void mavlink_delay_cb();

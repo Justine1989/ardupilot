@@ -269,6 +269,10 @@ void Plane::init_ardupilot()
 
     // disable safety if requested
     BoardConfig.init_safety();
+
+//#ifdef XBEE_CONNECT2
+	_xbee.init_xbee(hal.uartD);
+//#endif
 }
 
 //********************************************************************************
