@@ -129,8 +129,6 @@ void Xbee_Protocol::update_receive(void)
 
 void Xbee_Protocol::update_send(void)
 {
-	struct Location global_position_current_loc;
-    
     union Neighbours_cor xbee_send_data;
     xbee_send_data.Pose.time_boot_ms = AP_HAL::millis();
     xbee_send_data.Pose.lat = plane.current_loc.lat;
