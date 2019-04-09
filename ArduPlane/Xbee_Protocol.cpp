@@ -129,23 +129,19 @@ void Xbee_Protocol::update_receive(void)
 
 void Xbee_Protocol::update_send(void)
 {
-//	AP_AHRS &ahrs = AP::ahrs();
 	struct Location global_position_current_loc;
-//	ahrs.get_position(global_position_current_loc); // return value ignored; we send stale data
-    Vector3f vel;
-//    ahrs.get_velocity_NED(vel);
     
     union Neighbours_cor xbee_send_data;
     xbee_send_data.Pose.time_boot_ms = AP_HAL::millis();
-    xbee_send_data.Pose.lat = global_position_current_loc.lat;
-    xbee_send_data.Pose.lon = global_position_current_loc.lng;
-    xbee_send_data.Pose.alt = global_position_current_loc.alt*10UL;
-//    ahrs.get_relative_position_D_home(xbee_send_data.Pose.relative_alt);
-    xbee_send_data.Pose.relative_alt *= -1000.0f;
+    xbee_send_data.Pose.lat = plane.current_loc.lat;
+    xbee_send_data.Pose.lon = plane.current_loc.lng;
+    xbee_send_data.Pose.alt = plane.current_loc.alt*10UL;
+    xbee_send_data.Pose.relative_alt = plane.relative_altitude*1000.0f;
+	const Vector3f &vel = plane.gps.velocity();
     xbee_send_data.Pose.vx = vel.x * 100;
     xbee_send_data.Pose.vy = vel.y * 100;
     xbee_send_data.Pose.vz = vel.z * 100;
-//    xbee_send_data.Pose.hdg = ahrs.yaw_sensor;
+    xbee_send_data.Pose.hdg = plane.ahrs.yaw_sensor;
     
     send_protocol(0xFFFF, xbee_send_data.cor_data, Neighbours_Frame_Len);
     xbee_write();
