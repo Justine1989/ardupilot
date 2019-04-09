@@ -112,7 +112,9 @@ HAL_PX4::HAL_PX4() :
         &utilInstance, /* util */
         nullptr,    /* no onboard optical flow */
         nullptr)   /* CAN */
-{}
+{
+    uartDDriver.xbee_init(&PX4UARTDriver::rewrite_read,&PX4UARTDriver::rewrite_available,&uartDDriver);
+}
 
 bool _px4_thread_should_exit = false;        /**< Daemon exit flag */
 static bool thread_running = false;        /**< Daemon status flag */

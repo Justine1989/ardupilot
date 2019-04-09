@@ -38,7 +38,12 @@ public:
     virtual bool is_initialized() = 0;
     virtual void set_blocking_writes(bool blocking) = 0;
     virtual bool tx_pending() = 0;
-
+#if XBEE_TELEM==ENABLED
+    virtual int16_t xbee_read();
+    virtual size_t xbee_write(const uint8_t chan ,const uint8_t *buffer, size_t size);
+    virtual uint16_t xbee_available();
+	virtual void xbee_set_targ_add(uint16_t _addr);
+#endif
     enum flow_control {
         FLOW_CONTROL_DISABLE=0, FLOW_CONTROL_ENABLE=1, FLOW_CONTROL_AUTO=2
     };

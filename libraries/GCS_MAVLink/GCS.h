@@ -87,6 +87,9 @@ enum ap_message {
 ///
 class GCS_MAVLINK
 {
+#if XBEE_TELEM==ENABLED
+	friend class Plane;
+#endif
 public:
     GCS_MAVLINK();
     FUNCTOR_TYPEDEF(run_cli_fn, void, AP_HAL::UARTDriver*);

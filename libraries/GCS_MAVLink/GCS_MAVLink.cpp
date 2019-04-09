@@ -95,7 +95,11 @@ uint8_t comm_receive_ch(mavlink_channel_t chan)
     if (!valid_channel(chan)) {
         return 0;
     }
-
+#if XBEE_TELEM==ENABLED
+    if (chan == MAVLINK_COMM_2)
+        return (uint8_t)mavlink_comm_port[chan]->xbee_read();
+    else
+#endif
     return (uint8_t)mavlink_comm_port[chan]->read();
 }
 
@@ -130,7 +134,13 @@ uint16_t comm_get_available(mavlink_channel_t chan)
     if ((1U<<chan) & mavlink_locked_mask) {
         return 0;
     }
-    int16_t bytes = mavlink_comm_port[chan]->available();
+    int16_t bytes = 0;
+#if XBEE_TELEM==ENABLED
+	if(chan == MAVLINK_COMM_2)
+		bytes = mavlink_comm_port[chan]->xbee_available();
+	else
+#endif
+		bytes = mavlink_comm_port[chan]->available();
 	if (bytes == -1) {
 		return 0;
 	}
@@ -145,7 +155,12 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
     if (!valid_channel(chan)) {
         return;
     }
-    mavlink_comm_port[chan]->write(buf, len);
+#if XBEE_TELEM==ENABLED
+    if (chan == MAVLINK_COMM_2 || chan >=5 )
+         mavlink_comm_port[MAVLINK_COMM_2]->xbee_write(chan,buf,len);
+    else
+#endif
+	    mavlink_comm_port[chan]->write(buf, len);
 }
 
 extern const AP_HAL::HAL& hal;

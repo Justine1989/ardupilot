@@ -178,6 +178,9 @@ void Plane::send_location(mavlink_channel_t chan)
         fix_time_ms = millis();
     }
     const Vector3f &vel = gps.velocity();
+#if XBEE_TELEM==ENABLED
+	gcs().chan(2)._port->xbee_set_targ_add(0xFFFF);
+#endif
     mavlink_msg_global_position_int_send(
         chan,
         fix_time_ms,
@@ -189,6 +192,9 @@ void Plane::send_location(mavlink_channel_t chan)
         vel.y * 100,  // Y speed cm/s (+ve East)
         vel.z * -100, // Z speed cm/s (+ve up)
         ahrs.yaw_sensor);
+#if XBEE_TELEM==ENABLED
+	gcs().chan(2)._port->xbee_set_targ_add(0xDFDF);
+#endif
 }
 
 void Plane::send_nav_controller_output(mavlink_channel_t chan)

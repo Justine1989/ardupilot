@@ -84,8 +84,8 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(button_update,           5,    100),
     SCHED_TASK(stats_update,            1,    100),
 //#ifdef XBEE_CONNECT2
-    SCHED_TASK(_xbee_rc_update,         10,    500),
-    SCHED_TASK(_xbee_sd_update,			10,    180),
+//    SCHED_TASK(_xbee_rc_update,         10,    500),
+//   SCHED_TASK(_xbee_sd_update,			10,    180),
 //endif
 };
 

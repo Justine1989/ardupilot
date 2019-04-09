@@ -123,9 +123,12 @@
 #endif
 
 #ifndef XBEE_CONNECT2
-#define XBEE_CONNECT2
+#define XBEE_CONNECT2 ENABLED
 #endif
 
+#ifndef XBEE_TELEM
+#define XBEE_TELEM ENABLED
+#endif
 //////////////////////////////////////////////////////////////////////////////
 // FLIGHT_MODE
 // FLIGHT_MODE_CHANNEL

@@ -5,7 +5,36 @@
 #include "AP_HAL_PX4.h"
 #include <systemlib/perf_counter.h>
 
-class PX4::PX4UARTDriver : public AP_HAL::UARTDriver {
+#if XBEE_TELEM==ENABLED
+
+#define XBEEMAXBUF 356
+#define XBEEMAXDATA 110
+class Xbee
+{
+public:
+	Xbee():targ_add(0xDFDF) {};
+	typedef uint8_t(PX4::PX4UARTDriver::*call_read)(void);
+	typedef uint16_t(PX4::PX4UARTDriver::*call_available)(void);
+	void xbee_init(call_read _read, call_available _available,PX4::PX4UARTDriver* _obj);
+	//uint16_t get_recv_add();
+	uint16_t targ_add;
+protected:
+	uint16_t pack(const char *s, uint16_t lenth);
+	uint8_t decode(void);
+	uint16_t data_available();
+	uint8_t pack_buf[XBEEMAXBUF];
+private:
+	bool operating;
+	uint8_t datalenth;
+	uint8_t Frame_ID;
+	uint16_t recv_add;
+	call_read read;
+	call_available available;
+	PX4::PX4UARTDriver* obj;
+};
+#endif
+
+class PX4::PX4UARTDriver : public AP_HAL::UARTDriver, public Xbee {
 public:
     PX4UARTDriver(const char *devpath, const char *perf_name);
     /* PX4 implementations of UARTDriver virtual methods */
@@ -21,6 +50,16 @@ public:
     uint32_t available() override;
     uint32_t txspace() override;
     int16_t read() override;
+
+#if XBEE_TELEM==ENABLED
+    uint8_t rewrite_read();
+    uint16_t rewrite_available();
+    uint16_t xbee_available();
+    int16_t xbee_read();
+    size_t xbee_write(const uint8_t chan,const uint8_t *buffer,size_t size);
+	uint16_t xbee_get_recv_add();
+	void xbee_set_targ_add(uint16_t _addr);
+#endif
 
     /* PX4 implementations of Print virtual methods */
     size_t write(uint8_t c);
