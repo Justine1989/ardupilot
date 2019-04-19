@@ -24,10 +24,22 @@
 #define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
 
-//#ifdef XBEE_CONNECT2
+#if XBEE_CONNECT2==ENABLED
 #define NEIGHBOUR_NUM 10
 struct Neighbours_Pos;
-//#endif
+enum Neighbours_Addr : uint16_t {
+	NEI0 = 0xE0E0,
+	NEI1 = 0xE1E1,
+	NEI2 = 0xE2E2,
+	NEI3 = 0xE3E3,
+	NEI4 = 0xE4E4,
+	NEI5 = 0xE5E5,
+	NEI6 = 0xE6E6,
+	NEI7 = 0xE7E7,
+	NEI8 = 0xE8E8,
+	NEI9 = 0xE9E9
+};
+#endif
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
 /// please keep each MSG_ to a single MAVLink message. If need be
@@ -227,7 +239,10 @@ public:
 	void clear_neighbours_mask(void);
 	void init_neighbours_pose(void);
 //#endif
-
+#if XBEE_TELEM==ENABLED
+	void xbee_set_targ_add(uint16_t _addr);
+	uint16_t xbee_get_recv_add(void);
+#endif
 protected:
 
     // overridable method to check for packet acceptance. Allows for
@@ -433,6 +448,32 @@ private:
     static void save_signing_timestamp(bool force_save_now);
 
 //#ifdef XBEE_CONNECT2
+	int8_t get_nei_index(uint16_t addr){
+		switch((enum Neighbours_Addr)addr){
+			case NEI0:
+				return 0;
+			case NEI1:
+				return 1;
+			case NEI2:
+				return 2;
+			case NEI3:
+				return 3;
+			case NEI4:
+				return 4;
+			case NEI5:
+				return 5;
+			case NEI6:
+				return 6;
+			case NEI7:
+				return 7;
+			case NEI8:
+				return 8;
+			case NEI9:
+				return 9;
+			default:
+				return -1;
+		}
+	}
 	uint16_t neighbours_mask = 0;
 	Neighbours_Pos *neighbours_pose;
 //#endif
@@ -451,6 +492,14 @@ struct Neighbours_Pos{
 	float vz;
 	float hdg;
 };
+
+const uint16_t Neighbours_Frame_Len = sizeof(Neighbours_Pos);
+
+union Neighbours_cor{
+	Neighbours_Pos Pose;
+	uint8_t cor_data[Neighbours_Frame_Len];
+};
+
 //#endif
 
 

@@ -43,6 +43,9 @@ public:
     virtual size_t xbee_write(const uint8_t chan ,const uint8_t *buffer, size_t size);
     virtual uint16_t xbee_available();
 	virtual void xbee_set_targ_add(uint16_t _addr);
+	virtual uint16_t xbee_get_recv_add(void);
+	virtual bool xbee_frame_finish(void);
+	virtual bool xbee_frame_success(void);
 #endif
     enum flow_control {
         FLOW_CONTROL_DISABLE=0, FLOW_CONTROL_ENABLE=1, FLOW_CONTROL_AUTO=2

@@ -860,12 +860,15 @@ GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
     hal.util->perf_begin(_perf_update);
 
     status.packet_rx_drop_count = 0;
-
+	
     // process received bytes
-    uint16_t nbytes = comm_get_available(chan);
-    for (uint16_t i=0; i<nbytes; i++)
+//	uint16_t nbytes = comm_get_available(chan);
+//    for (uint16_t i=0; i<nbytes; i++)
+	uint16_t i = 0;
+	while(comm_get_available(chan)>0)
     {
-        uint8_t c = comm_receive_ch(chan);
+        int16_t cc_ = comm_receive_ch(chan);
+		uint8_t c = cc_;
 
         if (run_cli) {
             /* allow CLI to be started by hitting enter 3 times, if no
@@ -887,6 +890,15 @@ GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
         
         // Try to get a new message
         if (mavlink_parse_char(chan, c, &msg, &status)) {
+#if XBEE_CONNECT2==ENABLED
+			if(chan==MAVLINK_COMM_2&&msg.sysid!=255/*&&msg.sysid!=plane.g.sysid_my_gcs()*/){
+				mavlink_global_position_int_t gpos;
+				mavlink_msg_global_position_int_decode(&msg, &gpos);
+				
+				hal.uartE->printf("time: %u, yaw: %i\r\n", gpos.time_boot_ms, gpos.hdg);
+			}
+//				hal.uartE->printf("\r\nsysid: %i, msgid: %i\r\n", msg.sysid, msg.msgid);
+#endif
             hal.util->perf_begin(_perf_packet);
             packetReceived(status, msg);
             hal.util->perf_end(_perf_packet);
@@ -899,6 +911,7 @@ GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
                 break;
             }
         }
+		i++;
     }
 
     if (!waypoint_receiving) {

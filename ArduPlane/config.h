@@ -122,9 +122,6 @@
  # define FLAP_2_SPEED 0
 #endif
 
-#ifndef XBEE_CONNECT2
-#define XBEE_CONNECT2 ENABLED
-#endif
 
 #ifndef XBEE_TELEM
 #define XBEE_TELEM ENABLED

@@ -179,7 +179,7 @@ void Plane::send_location(mavlink_channel_t chan)
     }
     const Vector3f &vel = gps.velocity();
 #if XBEE_TELEM==ENABLED
-	gcs().chan(2)._port->xbee_set_targ_add(0xFFFF);
+	gcs().chan(MAVLINK_COMM_2).xbee_set_targ_add(0xFFFF);
 #endif
     mavlink_msg_global_position_int_send(
         chan,
@@ -193,7 +193,7 @@ void Plane::send_location(mavlink_channel_t chan)
         vel.z * -100, // Z speed cm/s (+ve up)
         ahrs.yaw_sensor);
 #if XBEE_TELEM==ENABLED
-	gcs().chan(2)._port->xbee_set_targ_add(0xDFDF);
+	gcs().chan(MAVLINK_COMM_2).xbee_set_targ_add(0xDFDF);
 #endif
 }
 
@@ -2013,17 +2013,27 @@ void Plane::gcs_retry_deferred(void)
     gcs().service_statustext();
 }
 
-//#ifdef XBEE_CONNECT2
-void Plane::_xbee_rc_update(void)
+#if XBEE_TELEM==ENABLED
+void Plane::swarm_control_update(void)
 {
-	_xbee.update_receive();
-}
+	if(control_mode!=GUIDED)
+		return;
 
-void Plane::_xbee_sd_update(void)
-{
-	_xbee.update_send();
+	mavlink_command_long_t packet;
+	packet.target_system = g.sysid_my_gcs;
+	packet.target_component = 1;
+	packet.confirmation = 1;
+	packet.command = MAV_CMD_DO_CHANGE_SPEED;
+	packet.param1 = 1;
+	packet.param2 = -1;
+	packet.param3 = 30;
+
+	AP_Mission::Mission_Command cmd;
+	if(AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, cmd) == MAV_MISSION_ACCEPTED){
+		do_change_speed(cmd);
+	}
 }
-//#endif
+#endif
 
 /*
   return true if we will accept this packet. Used to implement SYSID_ENFORCE

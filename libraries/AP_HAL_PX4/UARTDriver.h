@@ -17,17 +17,19 @@ public:
 	typedef uint16_t(PX4::PX4UARTDriver::*call_available)(void);
 	void xbee_init(call_read _read, call_available _available,PX4::PX4UARTDriver* _obj);
 	//uint16_t get_recv_add();
-	uint16_t targ_add;
 protected:
 	uint16_t pack(const char *s, uint16_t lenth);
-	uint8_t decode(void);
+	int16_t decode(void);
 	uint16_t data_available();
 	uint8_t pack_buf[XBEEMAXBUF];
-private:
+	uint16_t recv_add;
+	uint16_t targ_add;
 	bool operating;
+	bool success;
+private:
+	uint8_t check_sum;
 	uint8_t datalenth;
 	uint8_t Frame_ID;
-	uint16_t recv_add;
 	call_read read;
 	call_available available;
 	PX4::PX4UARTDriver* obj;
@@ -57,8 +59,17 @@ public:
     uint16_t xbee_available();
     int16_t xbee_read();
     size_t xbee_write(const uint8_t chan,const uint8_t *buffer,size_t size);
-	uint16_t xbee_get_recv_add();
+	uint16_t xbee_get_recv_add(){
+		return recv_add;
+	}
 	void xbee_set_targ_add(uint16_t _addr);
+	bool xbee_frame_finish(void){
+		return !operating;
+	}
+	bool xbee_frame_success(void){
+		return success;
+		success = false;
+	}
 #endif
 
     /* PX4 implementations of Print virtual methods */

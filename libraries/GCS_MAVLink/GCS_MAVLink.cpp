@@ -1,4 +1,4 @@
-/*
+ /*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
@@ -67,6 +67,18 @@ void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
         mavlink_locked_mask &= ~(1U<<(unsigned)_chan);
     }
 }
+
+#if XBEE_TELEM==ENABLED
+void GCS_MAVLINK::xbee_set_targ_add(uint16_t _addr)
+{
+	_port->xbee_set_targ_add(_addr);
+}
+
+uint16_t GCS_MAVLINK::xbee_get_recv_add(void)
+{
+	return _port->xbee_get_recv_add();
+}
+#endif
 
 // return a MAVLink variable type given a AP_Param type
 uint8_t mav_var_type(enum ap_var_type t)
@@ -157,7 +169,7 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
     }
 #if XBEE_TELEM==ENABLED
     if (chan == MAVLINK_COMM_2 || chan >=5 )
-         mavlink_comm_port[MAVLINK_COMM_2]->xbee_write(chan,buf,len);
+        mavlink_comm_port[MAVLINK_COMM_2]->xbee_write(chan,buf,len);
     else
 #endif
 	    mavlink_comm_port[chan]->write(buf, len);

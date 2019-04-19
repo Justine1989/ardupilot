@@ -501,6 +501,7 @@ void PX4UARTDriver::_timer_tick(void)
 void Xbee::xbee_init(call_read _read, call_available _available,PX4::PX4UARTDriver* _obj)
 {
     operating = false;
+	success = false;
     datalenth = 0;
     Frame_ID = 0;
     targ_add = 0xdfdf;
@@ -544,52 +545,58 @@ uint16_t Xbee::pack(const char * data, uint16_t lenth)// lenth of data
 
 //start-delimeter Length Frame_type Address RSSI Option-byte Data Checksum
 //7E			  __ __	 81		    __ __	__   00			 ____ 81
-uint8_t Xbee::decode(void)
+int16_t Xbee::decode(void)
 {
-        static uint8_t cursor = 0;
-        if (!operating)
-                return -1;
-        else
-        {
-                uint8_t byte = 0;
-                byte = obj->read();
-                cursor++;
-                if (cursor == datalenth)
-                {
-                        operating = false;
-                        cursor = 0;
-                        obj->read();
-                }
-                return byte;
+    static uint8_t cursor = 0;
+    uint8_t byte = 0;
+    if (!operating)
+        return -1;
+    else{
+        byte = obj->read();
+		check_sum += byte;
+        cursor++;
+		if(cursor == datalenth){
+            operating = false;
+            cursor = 0;
+			if(obj->read()==(0xFF-check_sum))
+				success = true;
+			else
+				success = false;
         }
+        return byte;
+    }
 }
 uint16_t Xbee::data_available()
 {
-        if (!operating)
+    if (!operating)
+    {
+        uint8_t byte[8] = { 0 };
+        while (obj->available() > 8)
         {
-                uint8_t byte[8] = { 0 };
-                while (obj->available() > 8)
+            byte[0] = obj->read();
+            if (byte[0] == 0x7E)
+            {
+                for (int i = 1;i < 4;i++){
+                    byte[i] = obj->read();
+				}
+                if (byte[3] == 0x81)
                 {
-                        byte[0] = obj->read();
-                        if (byte[0] == 0x7E)
-                        {
-                                for (int i = 1;i < 4;i++)
-                                        byte[i] = obj->read();
-                                if (byte[3] == 0x81)
-                                {
-                                        for (int i = 4;i < 8;i++)
-                                                byte[i] = obj->read();
-                                        recv_add = byte[4] * 256 + byte[5];
-                                        datalenth= byte[1] * 256 + byte[2] - 5;
-                                        operating = true;
-                                        return obj->available();
-                                }
-                        }
+					check_sum = byte[3];
+					for (int i = 4;i < 8;i++){
+                        byte[i] = obj->read();
+						check_sum += byte[i];
+					}
+                    recv_add = byte[4] * 256 + byte[5];
+                    datalenth= byte[1] * 256 + byte[2] - 5;
+                    operating = true;
+                    return obj->available();
                 }
-                return 0;
+            }
         }
-        else
-                return obj->available();
+        return 0;
+    }
+    else
+        return obj->available();
 }
 #endif //XBEE_TELEM
 

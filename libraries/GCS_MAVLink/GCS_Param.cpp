@@ -142,6 +142,10 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg, bool save)
     AP_Int16 *rate = nullptr;
     switch (packet.req_stream_id) {
     case MAV_DATA_STREAM_ALL:
+#if XBEE_TELEM==ENABLED
+		if(chan==MAVLINK_COMM_2)
+			freq = 10;
+#endif
         // note that we don't set STREAM_PARAMS - that is internal only
         for (uint8_t i=0; i<STREAM_PARAMS; i++) {
             if (save) {
@@ -164,6 +168,10 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg, bool save)
         rate = &streamRates[STREAM_RAW_CONTROLLER];
         break;
     case MAV_DATA_STREAM_POSITION:
+#if XBEE_TELEM==ENABLED
+		if(chan==MAVLINK_COMM_2)
+			freq = 10;
+#endif
         rate = &streamRates[STREAM_POSITION];
         break;
     case MAV_DATA_STREAM_EXTRA1:
