@@ -28,6 +28,10 @@ protected:
 
     uint8_t sysid_my_gcs() const override;
 
+#if XBEE_TELEM==ENABLED
+    bool update_neighbours_state(uint8_t sysid,mavlink_global_position_int_t& sta) override;
+#endif
+
 private:
 
     void handleMessage(mavlink_message_t * msg) override;

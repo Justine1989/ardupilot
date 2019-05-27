@@ -24,7 +24,7 @@
 #define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
 
-#if XBEE_CONNECT2==ENABLED
+#if XBEE_TELEM==ENABLED
 #define NEIGHBOUR_NUM 10
 struct Neighbours_Pos;
 enum Neighbours_Addr : uint16_t {
@@ -233,12 +233,12 @@ public:
     // return current packet overhead for a channel
     static uint8_t packet_overhead_chan(mavlink_channel_t chan);
 
-//#ifdef XBEE_CONNECT2
+#ifdef XBEE_CONNECT2
 	Neighbours_Pos* update_neighbours_pose(uint16_t index_i);
 	void update_neighbours_mask(uint16_t mask);
 	void clear_neighbours_mask(void);
 	void init_neighbours_pose(void);
-//#endif
+#endif
 #if XBEE_TELEM==ENABLED
 	void xbee_set_targ_add(uint16_t _addr);
 	uint16_t xbee_get_recv_add(void);
@@ -311,6 +311,10 @@ protected:
     MAV_RESULT handle_command_preflight_set_sensor_offsets(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_long_message(mavlink_command_long_t &packet);
+
+#if XBEE_TELEM==ENABLED
+    virtual bool update_neighbours_state(uint8_t sysid,mavlink_global_position_int_t& sta) = 0;
+#endif
 
 private:
 
@@ -447,7 +451,7 @@ private:
     bool signing_enabled(void) const;
     static void save_signing_timestamp(bool force_save_now);
 
-//#ifdef XBEE_CONNECT2
+#ifdef XBEE_CONNECT2
 	int8_t get_nei_index(uint16_t addr){
 		switch((enum Neighbours_Addr)addr){
 			case NEI0:
@@ -476,10 +480,10 @@ private:
 	}
 	uint16_t neighbours_mask = 0;
 	Neighbours_Pos *neighbours_pose;
-//#endif
+#endif
 };
 
-//#ifdef XBEE_CONNECT2
+#ifdef XBEE_CONNECT2
 struct Neighbours_Pos{
 	uint32_t time_boot_ms;
 	int32_t lat;
@@ -500,7 +504,7 @@ union Neighbours_cor{
 	uint8_t cor_data[Neighbours_Frame_Len];
 };
 
-//#endif
+#endif
 
 
 /// @class GCS
@@ -566,12 +570,12 @@ public:
     // static frsky_telem pointer to support queueing text messages
     AP_Frsky_Telem *frsky_telemetry_p;
 
-//#ifdef XBEE_CONNECT2
+#ifdef XBEE_CONNECT2
 	Neighbours_Pos* update_neighbours_pose(uint16_t index_i);
 	void update_neighbours_mask(uint16_t mask);
 	void clear_neighbours_mask(void);
 	void init_neighbours_pose(void);
-//#endif
+#endif
 
 private:
 

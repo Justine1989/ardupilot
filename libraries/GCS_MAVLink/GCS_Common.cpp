@@ -862,6 +862,9 @@ GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
     status.packet_rx_drop_count = 0;
 	
     // process received bytes
+#if XBEE_TELEM==ENABLED
+    uint32_t now = AP_HAL::millis();
+#endif
 //	uint16_t nbytes = comm_get_available(chan);
 //    for (uint16_t i=0; i<nbytes; i++)
 	uint16_t i = 0;
@@ -890,12 +893,13 @@ GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
         
         // Try to get a new message
         if (mavlink_parse_char(chan, c, &msg, &status)) {
-#if XBEE_CONNECT2==ENABLED
+#if XBEE_TELEM==ENABLED
 			if(chan==MAVLINK_COMM_2&&msg.sysid!=255/*&&msg.sysid!=plane.g.sysid_my_gcs()*/){
 				mavlink_global_position_int_t gpos;
 				mavlink_msg_global_position_int_decode(&msg, &gpos);
-				
-				hal.uartE->printf("time: %u, yaw: %i\r\n", gpos.time_boot_ms, gpos.hdg);
+				gpos.time_boot_ms = now;
+				update_neighbours_state(msg.sysid,gpos);
+//				hal.uartE->printf("sysid:%i, time: %u, yaw: %i\r\n", msg.sysid, gpos.time_boot_ms, gpos.hdg);
 			}
 //				hal.uartE->printf("\r\nsysid: %i, msgid: %i\r\n", msg.sysid, msg.msgid);
 #endif
@@ -1336,9 +1340,9 @@ void GCS::setup_uarts(AP_SerialManager &serial_manager)
     for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
         chan(i).setup_uart(serial_manager, AP_SerialManager::SerialProtocol_MAVLink, i);
     }
-//#ifdef XBEE_CONNECT2
+#ifdef XBEE_CONNECT2
     init_neighbours_pose();
-//#endif
+#endif
 }
 
 void GCS::handle_interactive_setup()

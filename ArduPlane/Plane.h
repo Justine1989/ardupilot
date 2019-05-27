@@ -115,6 +115,18 @@
 #include <SITL/SITL.h>
 #endif
 
+#if XBEE_TELEM==ENABLED
+//#include <cassert> 
+//#include <algorithm>
+//#include <iostream>
+//#include <string>
+//#include <iterator>
+//#include <vector>
+//#include <map>
+//using namespace std;
+#define MAX_NEI 10
+#endif
+
 /*
   a plane specific AP_AdvancedFailsafe class
  */
@@ -1112,6 +1124,13 @@ private:
 
 #if XBEE_TELEM==ENABLED
 	void swarm_control_update(void);
+
+	mavlink_global_position_int_t neighbours[MAX_NEI];
+	uint16_t nei_mask;
+
+	bool update_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei);
+	bool get_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei);
+	void check_lost_neighbours(void);
 #endif
 
 public:

@@ -187,7 +187,7 @@ bool comm_is_idle(mavlink_channel_t chan)
 	return status == nullptr || status->parse_state <= MAVLINK_PARSE_STATE_IDLE;
 }
 
-//#ifdef XBEE_CONNECT2
+#ifdef XBEE_CONNECT2
 Neighbours_Pos* GCS_MAVLINK::update_neighbours_pose(uint16_t index_i)
 {
 	return &(neighbours_pose[index_i]);
@@ -227,5 +227,5 @@ void GCS::init_neighbours_pose(void)
 {
 	chan(0).init_neighbours_pose();
 }
-//#endif
+#endif
 

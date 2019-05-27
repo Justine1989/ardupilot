@@ -2,6 +2,16 @@
 
 #include "Plane.h"
 #include "version.h"
+//#if XBEE_TELEM==ENABLED
+//#include <cassert> 
+//#include <algorithm>
+//#include <iostream>
+//#include <string>
+//#include <iterator>
+//#include <vector>
+//#include <map>
+//using namespace std;
+//#endif
 
 void Plane::send_heartbeat(mavlink_channel_t chan)
 {
@@ -2019,19 +2029,23 @@ void Plane::swarm_control_update(void)
 	if(control_mode!=GUIDED)
 		return;
 
-	mavlink_command_long_t packet;
-	packet.target_system = g.sysid_my_gcs;
-	packet.target_component = 1;
-	packet.confirmation = 1;
-	packet.command = MAV_CMD_DO_CHANGE_SPEED;
-	packet.param1 = 1;
-	packet.param2 = -1;
-	packet.param3 = 30;
+	uint32_t now = AP_HAL::millis();
+	
+	guided_state.forced_rpy_cd.x = 0;//degrees(q.get_euler_roll()) * 100.0f;
+	guided_state.forced_rpy_cd.y = 0;//degrees(q.get_euler_pitch()) * 100.0f;
+	guided_state.forced_rpy_cd.z = 0;//degrees(q.get_euler_yaw()) * 100.0f;
+	guided_state.forced_throttle = 100.0f;
+	guided_state.last_forced_rpy_ms.x = now;
+	guided_state.last_forced_rpy_ms.y = now;
+	guided_state.last_forced_rpy_ms.z = now;
+	guided_state.last_forced_throttle_ms = now;
 
-	AP_Mission::Mission_Command cmd;
-	if(AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, cmd) == MAV_MISSION_ACCEPTED){
-		do_change_speed(cmd);
-	}
+	gcs().send_text(MAV_SEVERITY_INFO,"RUNNNING SWARM CONTROL!");
+}
+
+bool GCS_MAVLINK_Plane::update_neighbours_state(uint8_t sysid,mavlink_global_position_int_t& sta)
+{
+    return plane.update_neighbours(sysid,sta);
 }
 #endif
 
@@ -2082,3 +2096,30 @@ AP_Rally *GCS_MAVLINK_Plane::get_rally() const
 {
     return &plane.rally;
 }
+
+
+#if XBEE_TELEM==ENABLED
+bool Plane::update_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei){
+	if(sysid>=MAX_NEI)
+		return false;
+	neighbours[sysid] = nei;
+	nei_mask |= 1<<sysid;
+	return true;
+}
+bool Plane::get_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei){
+	if(nei_mask&(1<<sysid))
+		nei = neighbours[sysid];
+	else
+		return false;
+	return true;
+}
+void Plane::check_lost_neighbours(void){
+	uint32_t now = AP_HAL::millis();
+	for(auto i = 0;i < MAX_NEI; i++){
+		if(nei_mask&(1<<i))
+			if(now - neighbours[i].time_boot_ms > 1000)
+				nei_mask &= ~(1<<i);
+	}
+}
+#endif
+
