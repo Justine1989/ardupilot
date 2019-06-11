@@ -112,7 +112,7 @@ uint8_t comm_receive_ch(mavlink_channel_t chan)
         return (uint8_t)mavlink_comm_port[chan]->xbee_read();
     else
 #endif
-    return (uint8_t)mavlink_comm_port[chan]->read();
+        return (uint8_t)mavlink_comm_port[chan]->read();
 }
 
 /// Check for available transmit space on the nominated MAVLink channel

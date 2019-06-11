@@ -1056,7 +1056,9 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
     } else {
         mag.zero();
     }
-
+#if XBEE_TELEM!=ENABLED
+	gcs().chan(MAVLINK_COMM_2).xbee_set_targ_add(0xE9E9);
+#endif
     mavlink_msg_raw_imu_send(
         chan,
         AP_HAL::micros(),
@@ -1069,6 +1071,9 @@ void GCS_MAVLINK::send_raw_imu(const AP_InertialSensor &ins, const Compass &comp
         mag.x,
         mag.y,
         mag.z);
+#if XBEE_TELEM!=ENABLED
+	gcs().chan(MAVLINK_COMM_2).xbee_set_targ_add(0xDFDF);
+#endif
 
     if (ins.get_gyro_count() <= 1 &&
         ins.get_accel_count() <= 1 &&
