@@ -901,7 +901,6 @@ GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
 				update_neighbours_state(msg.sysid,gpos);
 //				hal.uartE->printf("sysid:%i, time: %u, yaw: %i\r\n", msg.sysid, gpos.time_boot_ms, gpos.hdg);
 			}
-//				hal.uartE->printf("\r\nsysid: %i, msgid: %i\r\n", msg.sysid, msg.msgid);
 #endif
             hal.util->perf_begin(_perf_packet);
             packetReceived(status, msg);
@@ -917,6 +916,9 @@ GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
         }
 		i++;
     }
+#if XBEE_TELEM==ENABLED
+    update_check_lost_neighbours();
+#endif
 
     if (!waypoint_receiving) {
         hal.util->perf_end(_perf_update);    

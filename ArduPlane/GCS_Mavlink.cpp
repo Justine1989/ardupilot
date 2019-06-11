@@ -2026,26 +2026,36 @@ void Plane::gcs_retry_deferred(void)
 #if XBEE_TELEM==ENABLED
 void Plane::swarm_control_update(void)
 {
+    mavlink_global_position_int_t gpos;
+    if(get_neighbours(3,gpos))
+        hal.uartE->printf("sysid:%i, time: %u, yaw: %i\r\n", 3, gpos.time_boot_ms, gpos.hdg);
+    
 	if(control_mode!=GUIDED)
 		return;
 
 	uint32_t now = AP_HAL::millis();
 	
-	guided_state.forced_rpy_cd.x = 0;//degrees(q.get_euler_roll()) * 100.0f;
-	guided_state.forced_rpy_cd.y = 0;//degrees(q.get_euler_pitch()) * 100.0f;
+//	guided_state.forced_rpy_cd.x = 0;//degrees(q.get_euler_roll()) * 100.0f;
+//	guided_state.forced_rpy_cd.y = 0;//degrees(q.get_euler_pitch()) * 100.0f;
 	guided_state.forced_rpy_cd.z = 0;//degrees(q.get_euler_yaw()) * 100.0f;
-	guided_state.forced_throttle = 100.0f;
-	guided_state.last_forced_rpy_ms.x = now;
-	guided_state.last_forced_rpy_ms.y = now;
+//	guided_state.forced_throttle = 100.0f;
+//	guided_state.last_forced_rpy_ms.x = now;
+//	guided_state.last_forced_rpy_ms.y = now;
 	guided_state.last_forced_rpy_ms.z = now;
-	guided_state.last_forced_throttle_ms = now;
+//	guided_state.last_forced_throttle_ms = now;
 
-	gcs().send_text(MAV_SEVERITY_INFO,"RUNNNING SWARM CONTROL!");
+
+	//gcs().send_text(MAV_SEVERITY_INFO,"RUNNNING SWARM CONTROL!");
 }
 
 bool GCS_MAVLINK_Plane::update_neighbours_state(uint8_t sysid,mavlink_global_position_int_t& sta)
 {
     return plane.update_neighbours(sysid,sta);
+}
+
+void GCS_MAVLINK_Plane::update_check_lost_neighbours(void)
+{
+    plane.check_lost_neighbours();
 }
 #endif
 

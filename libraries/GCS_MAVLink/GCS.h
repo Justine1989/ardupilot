@@ -314,6 +314,7 @@ protected:
 
 #if XBEE_TELEM==ENABLED
     virtual bool update_neighbours_state(uint8_t sysid,mavlink_global_position_int_t& sta) = 0;
+    virtual void update_check_lost_neighbours(void) = 0;
 #endif
 
 private:
