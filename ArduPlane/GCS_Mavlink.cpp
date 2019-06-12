@@ -2024,24 +2024,141 @@ void Plane::gcs_retry_deferred(void)
 }
 
 #if XBEE_TELEM==ENABLED
+#define DESIRED_REL_X 20
+#define DESIRED_REL_Y 20
 void Plane::swarm_control_update(void)
 {
     mavlink_global_position_int_t gpos;
-    if(get_neighbours(3,gpos))
+    /*if(get_neighbours(3,gpos))
         hal.uartE->printf("sysid:%i, time: %u, yaw: %i\r\n", 3, gpos.time_boot_ms, gpos.hdg);
     
 	if(control_mode!=GUIDED)
 		return;
 
 	uint32_t now = AP_HAL::millis();
+
+    Location neighbor_loc;
+    neighbor_loc.lat = gpos.lat;
+    neighbor_loc.lng = gpos.lon;
+    neighbor_loc.alt = gpos.alt;
+
+    Location self_loc = plane.current_loc;
+
+    Vector2f loc_diff = location_diff(self_loc, neighbor_loc);*/
 	
+    uint32_t now_ms = AP_HAL::millis();
+    int i;
+    if(control_mode == GUIDED)
+    {
+        for(i = 0;i < MAX_NEI;i++)
+        {
+            /*if(plane.neighbors[i].last_heartbeat_ms > 0 && now_ms - plane.neighbors[i].last_heartbeat_ms < 3000)
+            {
+                gcs_send_text_fmt(MAV_SEVERITY_INFO, "Get heartbeat from mav %u", i);
+                if(plane.neighbors[i].Pxyz.lat != 0 && plane.neighbors[i].Pxyz.lng != 0)
+                {
+                    gcs_send_text_fmt(MAV_SEVERITY_INFO,
+                            "Pos (%f, %f, %f) from mav %u",
+                            plane.neighbors[i].Pxyz.lat / 1e7,
+                            plane.neighbors[i].Pxyz.lng / 1e7,
+                            plane.neighbors[i].Pxyz.alt / 1e3,
+                            i);
+                }
+            }*/
+            if(get_neighbours(i,gpos))
+            {
+                // Obtain the necessary information
+                Location neighbor_loc;// = plane.neighbors[i].Pxyz;
+                neighbor_loc.lat = gpos.lat;
+                neighbor_loc.lng = gpos.lon;
+                neighbor_loc.alt = gpos.alt/10;
+
+                Location self_loc = plane.current_loc;
+                Vector2f loc_diff = location_diff(self_loc, neighbor_loc);
+                float neighbor_speed = sqrt(pow(gpos.vx, 2) + pow(gpos.vy, 2) + pow(gpos.vz, 2));
+                float self_speed = plane.airspeed.get_airspeed();
+                float airspeed_diff = neighbor_speed - self_speed;
+                float neighbor_hdg = gpos.hdg * M_PI / 180 / 100;
+                float self_hdg = plane.ahrs.yaw_sensor * M_PI / 180 / 100;
+                if(neighbor_hdg > M_PI)
+                    neighbor_hdg = neighbor_hdg - 2*M_PI;
+                if(self_hdg > M_PI)
+                    self_hdg = self_hdg - 2*M_PI;
+                float hdg_diff = neighbor_hdg - self_hdg;
+                if(hdg_diff > M_PI) hdg_diff = hdg_diff - 2*M_PI;
+                if(hdg_diff < -M_PI) hdg_diff = hdg_diff + 2*M_PI;
+
+                // Display relative information
+/*                if(plane.guided_state.last_debug_ms > 0 && now_ms - plane.guided_state.last_debug_ms >= 5000 &&
+                   plane.neighbors[i].Pxyz.lat != 0 && plane.neighbors[i].Pxyz.lng != 0)
+                {
+                    plane.guided_state.last_debug_ms = AP_HAL::millis();
+                    gcs_send_text_fmt(MAV_SEVERITY_INFO,
+                            "err in x %f from mav %u",
+                            loc_diff.x,
+                            i);
+                    gcs_send_text_fmt(MAV_SEVERITY_INFO,
+                            "err in y %f from mav %u",
+                            loc_diff.y,
+                            i);
+                    gcs_send_text_fmt(MAV_SEVERITY_INFO,
+                            "err in yaw %f from mav %u",
+                            hdg_diff * 180 / M_PI,
+                            i);
+                    gcs_send_text_fmt(MAV_SEVERITY_INFO,
+                            "err in speed %f from mav %u",
+                            airspeed_diff,
+                            i);
+                }
+*/
+                // Tracking control
+                float vc_cmd, phic_cmd, hc_cmd;
+                vc_cmd = self_speed + 3 * airspeed_diff; // in m/s
+                phic_cmd = atan2(neighbor_speed * 0.5 * hdg_diff, GRAVITY_MSS); // in rad
+                hc_cmd = neighbor_loc.alt / 1e2; // in m
+
+                // Formation control
+                float delta_x = loc_diff.x * cosf(self_hdg) + loc_diff.y * sinf(self_hdg);
+                float delta_y = - loc_diff.x * sinf(self_hdg) + loc_diff.y * cosf(self_hdg);
+                float vd_cmd, phid_cmd, hd_cmd;
+                vd_cmd = delta_x - DESIRED_REL_X;
+                phid_cmd = (delta_y - DESIRED_REL_Y) * 0.01;
+                hd_cmd = 0;
+                float v_cmd = vc_cmd + vd_cmd;
+                float phi_cmd = phic_cmd + phid_cmd;
+                float h_cmd = hc_cmd + hd_cmd;
+
+                // roll control
+                if(phi_cmd >= M_PI / 4)
+                    phi_cmd = M_PI / 4;
+                if(phi_cmd <= -M_PI / 4)
+                    phi_cmd = -M_PI / 4;
+                plane.guided_state.last_forced_rpy_ms.x = now_ms;
+                plane.guided_state.forced_rpy_cd.x = int32_t(phi_cmd * 18000 / M_PI);
+
+                // speed control
+                if(v_cmd > 30)
+                    v_cmd = 30;
+                if(v_cmd < 10)
+                    v_cmd = 10;
+                aparm.airspeed_cruise_cm.set(int32_t(v_cmd * 100));
+
+                // height control
+                plane.next_WP_loc.alt = int32_t(h_cmd * 100);
+                plane.next_WP_loc.alt += plane.home.alt;
+                plane.next_WP_loc.flags.relative_alt = false;
+                plane.reset_offset_altitude();
+            }
+        }
+    }
+
 //	guided_state.forced_rpy_cd.x = 0;//degrees(q.get_euler_roll()) * 100.0f;
 //	guided_state.forced_rpy_cd.y = 0;//degrees(q.get_euler_pitch()) * 100.0f;
-	guided_state.forced_rpy_cd.z = 0;//degrees(q.get_euler_yaw()) * 100.0f;
+//	guided_state.forced_rpy_cd.z = 0;//degrees(q.get_euler_yaw()) * 100.0f;
 //	guided_state.forced_throttle = 100.0f;
 //	guided_state.last_forced_rpy_ms.x = now;
 //	guided_state.last_forced_rpy_ms.y = now;
-	guided_state.last_forced_rpy_ms.z = now;
+//	guided_state.last_forced_rpy_ms.z = now;
 //	guided_state.last_forced_throttle_ms = now;
 
 
