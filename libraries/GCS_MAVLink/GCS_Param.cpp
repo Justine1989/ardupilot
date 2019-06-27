@@ -144,9 +144,19 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg)
         // note that we don't set STREAM_PARAMS - that is internal only
         for (uint8_t i=0; i<STREAM_PARAMS; i++) {
             if (persist_streamrates()) {
-                streamRates[i].set_and_save_ifchanged(freq);
+#if XBEE_TELEM==ENABLED
+		        if(i==STREAM_POSITION&&chan==MAVLINK_COMM_2)
+                    streamRates[i].set_and_save_ifchanged(10);
+                else
+#endif
+                    streamRates[i].set_and_save_ifchanged(freq);
             } else {
-                streamRates[i].set(freq);
+#if XBEE_TELEM==ENABLED
+		        if(i==STREAM_POSITION&&chan==MAVLINK_COMM_2)
+                    streamRates[i].set(10);
+                else
+#endif
+                    streamRates[i].set(freq);
             }
         }
         break;
@@ -163,6 +173,10 @@ void GCS_MAVLINK::handle_request_data_stream(mavlink_message_t *msg)
         rate = &streamRates[STREAM_RAW_CONTROLLER];
         break;
     case MAV_DATA_STREAM_POSITION:
+#if XBEE_TELEM==ENABLED
+		if(chan==MAVLINK_COMM_2)
+			freq = 10;
+#endif
         rate = &streamRates[STREAM_POSITION];
         break;
     case MAV_DATA_STREAM_EXTRA1:

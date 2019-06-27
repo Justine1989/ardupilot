@@ -1564,6 +1564,41 @@ void Plane::gcs_retry_deferred(void)
     gcs().retry_deferred();
 }
 
+#if XBEE_TELEM==ENABLED
+bool Plane::update_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei){
+	if(sysid>=MAX_NEI)
+		return false;
+	neighbours[sysid] = nei;
+	nei_mask |= 1<<sysid;
+	return true;
+}
+bool Plane::get_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei){
+	if(nei_mask&(1<<sysid))
+		nei = neighbours[sysid];
+	else
+		return false;
+	return true;
+}
+void Plane::check_lost_neighbours(void){
+	uint32_t now = AP_HAL::millis();
+	for(auto i = 0;i < MAX_NEI; i++){
+		if(nei_mask&(1<<i))
+			if(now - neighbours[i].time_boot_ms > 1000)
+				nei_mask &= ~(1<<i);
+	}
+}
+
+bool GCS_MAVLINK_Plane::update_neighbours_state(uint8_t sysid,mavlink_global_position_int_t& sta)
+{
+    return plane.update_neighbours(sysid,sta);
+}
+
+void GCS_MAVLINK_Plane::update_check_lost_neighbours(void)
+{
+    plane.check_lost_neighbours();
+}
+#endif
+
 /*
   return true if we will accept this packet. Used to implement SYSID_ENFORCE
  */

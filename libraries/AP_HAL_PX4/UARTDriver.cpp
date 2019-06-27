@@ -382,6 +382,42 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
     return ret;
 }
 
+#if XBEE_TELEM==ENABLED
+uint8_t PX4UARTDriver::rewrite_read()
+{
+    return (uint8_t)read();
+}
+uint16_t PX4UARTDriver::rewrite_available()
+{
+    return (uint16_t)available();
+}
+uint16_t PX4UARTDriver::xbee_available()
+{
+    return data_available();
+}
+int16_t PX4UARTDriver::xbee_read()
+{
+    return decode();
+}
+size_t PX4UARTDriver::xbee_write(const uint8_t chan ,const uint8_t *buffer, size_t size)
+{
+    uint16_t lenth = 0;
+//    if (chan == 2)
+//        targ_add = 0xdfdf; //gcs
+//    else if (chan == 5)
+//        targ_add = 0xffff; //broadcast
+//    else
+//        targ_add = (chan-5 + 0xe0) * 0x0101; //target_add=(targ_sysid+0xe0)*0x0101 sysid: 1 2 3 4
+    lenth = pack((const char *)buffer, (uint16_t)size);
+    lenth = write(pack_buf, lenth);
+    return lenth;
+}
+
+void PX4UARTDriver::xbee_set_targ_add(uint16_t _addr)
+{
+	targ_add = _addr;
+}
+#endif
 /*
   try writing n bytes, handling an unresponsive port
  */
@@ -564,5 +600,109 @@ uint64_t PX4UARTDriver::receive_time_constraint_us(uint16_t nbytes)
     }
     return last_receive_us;
 }
+
+#if XBEE_TELEM==ENABLED
+
+void Xbee::xbee_init(call_read _read, call_available _available,PX4::PX4UARTDriver* _obj)
+{
+    operating = false;
+	success = false;
+    datalenth = 0;
+    Frame_ID = 0;
+    targ_add = 0xdfdf;
+    read = _read;
+    available = _available;
+    obj=_obj;
+}
+
+//start-delimeter Length Frame_type Frame_ID Address Option-byte Data Checksum
+//7E			  __ __	 01		    __		 __ __	 00			 ____ 81
+uint16_t Xbee::pack(const char * data, uint16_t lenth)// lenth of data
+{
+	uint16_t pack_lenth;
+	uint8_t i = 0;
+	uint8_t check;
+        memset(pack_buf, 0, sizeof(pack_buf));
+	for (i = 0;i < ((lenth - 1) / XBEEMAXDATA) + 1;i++)
+	{
+		pack_lenth = 0;
+		if ((lenth - XBEEMAXDATA * i) >= XBEEMAXDATA)
+			pack_lenth = XBEEMAXDATA;
+		else
+			pack_lenth = lenth - XBEEMAXDATA * i;
+		pack_buf[0 + (XBEEMAXDATA + 9) * i] = 0x7e;
+		pack_lenth += 5;
+		pack_buf[1 + (XBEEMAXDATA + 9) * i] = pack_lenth >> 8;
+		pack_buf[2 + (XBEEMAXDATA + 9) * i] = pack_lenth & 0xff;
+		pack_buf[3 + (XBEEMAXDATA + 9) * i] = 1;
+                pack_buf[4 + (XBEEMAXDATA + 9) * i] = 0;
+		pack_buf[5 + (XBEEMAXDATA + 9) * i] = targ_add >> 8;
+		pack_buf[6 + (XBEEMAXDATA + 9) * i] = targ_add & 0xff;
+		pack_buf[7 + (XBEEMAXDATA + 9) * i] = 0;
+		memcpy(&pack_buf[8 + (XBEEMAXDATA + 9) * i], (data + XBEEMAXDATA * i), pack_lenth - 5);
+		check = 0;
+		for (int u = 3;u < pack_lenth + 3;u++)
+			check += pack_buf[u + (XBEEMAXDATA + 9) * i];
+		pack_buf[pack_lenth + 3 + (XBEEMAXDATA + 9) * i] = 0xFF - check;
+	}
+	return lenth + 9 * i;
+}
+
+//start-delimeter Length Frame_type Address RSSI Option-byte Data Checksum
+//7E			  __ __	 81		    __ __	__   00			 ____ 81
+int16_t Xbee::decode(void)
+{
+    static uint8_t cursor = 0;
+    uint8_t byte = 0;
+    if (!operating)
+        return -1;
+    else{
+        byte = obj->read();
+		check_sum += byte;
+        cursor++;
+		if(cursor == datalenth){
+            operating = false;
+            cursor = 0;
+			if(obj->read()==(0xFF-check_sum))
+				success = true;
+			else
+				success = false;
+        }
+        return byte;
+    }
+}
+uint16_t Xbee::data_available()
+{
+    if (!operating)
+    {
+        uint8_t byte[8] = { 0 };
+        while (obj->available() > 8)
+        {
+            byte[0] = obj->read();
+            if (byte[0] == 0x7E)
+            {
+                for (int i = 1;i < 4;i++){
+                    byte[i] = obj->read();
+				}
+                if (byte[3] == 0x81)
+                {
+					check_sum = byte[3];
+					for (int i = 4;i < 8;i++){
+                        byte[i] = obj->read();
+						check_sum += byte[i];
+					}
+                    recv_add = byte[4] * 256 + byte[5];
+                    datalenth= byte[1] * 256 + byte[2] - 5;
+                    operating = true;
+                    return obj->available();
+                }
+            }
+        }
+        return 0;
+    }
+    else
+        return obj->available();
+}
+#endif //XBEE_TELEM
 
 #endif

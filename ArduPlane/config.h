@@ -378,3 +378,7 @@
  #define OSD_ENABLED DISABLED
 #endif
 
+#ifndef XBEE_TELEM
+ #define XBEE_TELEM ENABLED
+#endif
+

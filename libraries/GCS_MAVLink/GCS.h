@@ -29,6 +29,22 @@
 #define CHECK_PAYLOAD_SIZE(id) if (comm_get_txspace(chan) < packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN) return false
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
 
+#if XBEE_TELEM==ENABLED
+#define NEIGHBOUR_NUM 10
+struct Neighbours_Pos;
+enum Neighbours_Addr : uint16_t {
+	NEI0 = 0xE0E0,
+	NEI1 = 0xE1E1,
+	NEI2 = 0xE2E2,
+	NEI3 = 0xE3E3,
+	NEI4 = 0xE4E4,
+	NEI5 = 0xE5E5,
+	NEI6 = 0xE6E6,
+	NEI7 = 0xE7E7,
+	NEI8 = 0xE8E8,
+	NEI9 = 0xE9E9
+};
+#endif
 //  GCS Message ID's
 /// NOTE: to ensure we never block on sending MAVLink messages
 /// please keep each MSG_ to a single MAVLink message. If need be
@@ -101,6 +117,9 @@ enum ap_message : uint8_t {
 ///
 class GCS_MAVLINK
 {
+#if XBEE_TELEM==ENABLED
+	friend class Plane;
+#endif
 public:
     friend class GCS;
     GCS_MAVLINK();
@@ -245,6 +264,16 @@ public:
     // vehicle subclass cpp files should define this:
     static const struct stream_entries all_stream_entries[];
 
+#ifdef XBEE_CONNECT2
+	Neighbours_Pos* update_neighbours_pose(uint16_t index_i);
+	void update_neighbours_mask(uint16_t mask);
+	void clear_neighbours_mask(void);
+	void init_neighbours_pose(void);
+#endif
+#if XBEE_TELEM==ENABLED
+	void xbee_set_targ_add(uint16_t _addr);
+	uint16_t xbee_get_recv_add(void);
+#endif
 protected:
 
     virtual bool in_hil_mode() const { return false; }
@@ -386,6 +415,10 @@ protected:
     static constexpr const float magic_force_arm_value = 2989.0f;
     static constexpr const float magic_force_disarm_value = 21196.0f;
 
+#if XBEE_TELEM==ENABLED
+    virtual bool update_neighbours_state(uint8_t sysid,mavlink_global_position_int_t& sta) = 0;
+    virtual void update_check_lost_neighbours(void) = 0;
+#endif
 private:
 
     float       adjust_rate_for_stream_trigger(enum streams stream_num);

@@ -899,10 +899,23 @@ GCS_MAVLINK::update(uint32_t max_time_us)
     status.packet_rx_drop_count = 0;
 
     // process received bytes
-    uint16_t nbytes = comm_get_available(chan);
-    for (uint16_t i=0; i<nbytes; i++)
+#if XBEE_TELEM==ENABLED
+    uint32_t now = AP_HAL::millis();
+#endif
+//    uint16_t nbytes = comm_get_available(chan);
+//    for (uint16_t i=0; i<nbytes; i++)
+    uint16_t i = 0;
+    while(comm_get_available(chan)>0)
     {
-        const uint8_t c = (uint8_t)_port->read();
+        uint8_t cc;
+#if XBEE_TELEM==ENABLED
+        if (chan == MAVLINK_COMM_2)
+            cc = (uint8_t)_port->xbee_read();
+        else
+            cc = (uint8_t)_port->read();
+        const uint8_t c = cc;
+#endif
+//            const uint8_t c = (uint8_t)_port->read();
         const uint32_t protocol_timeout = 4000;
         
         if (alternative.handler &&
@@ -930,6 +943,15 @@ GCS_MAVLINK::update(uint32_t max_time_us)
 
         // Try to get a new message
         if (mavlink_parse_char(chan, c, &msg, &status)) {
+#if XBEE_TELEM==ENABLED
+			if(chan==MAVLINK_COMM_2&&msg.sysid!=255/*&&msg.sysid!=plane.g.sysid_my_gcs()*/){
+				mavlink_global_position_int_t gpos;
+				mavlink_msg_global_position_int_decode(&msg, &gpos);
+				gpos.time_boot_ms = now;
+				update_neighbours_state(msg.sysid,gpos);
+//				hal.uartE->printf("sysid:%i, time: %u, yaw: %i\r\n", msg.sysid, gpos.time_boot_ms, gpos.hdg);
+			}
+#endif
             hal.util->perf_begin(_perf_packet);
             packetReceived(status, msg);
             hal.util->perf_end(_perf_packet);
@@ -944,7 +966,11 @@ GCS_MAVLINK::update(uint32_t max_time_us)
                 break;
             }
         }
+        i++;
     }
+#if XBEE_TELEM==ENABLED
+    update_check_lost_neighbours();
+#endif
 
     const uint32_t tnow = AP_HAL::millis();
 
@@ -2930,7 +2956,10 @@ void GCS_MAVLINK::send_global_position_int()
 
     Vector3f vel;
     ahrs.get_velocity_NED(vel);
-
+#if XBEE_TELEM==ENABLED
+	if(chan==MAVLINK_COMM_2)
+        xbee_set_targ_add(0xFFFF);
+#endif
     mavlink_msg_global_position_int_send(
         chan,
         AP_HAL::millis(),
@@ -2942,6 +2971,10 @@ void GCS_MAVLINK::send_global_position_int()
         vel.y * 100,                     // Y speed cm/s (+ve East)
         vel.z * 100,                     // Z speed cm/s (+ve Down)
         ahrs.yaw_sensor);                // compass heading in 1/100 degree
+#if XBEE_TELEM==ENABLED
+	if(chan==MAVLINK_COMM_2)
+        xbee_set_targ_add(0xDFDF);
+#endif
 }
 
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
