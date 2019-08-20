@@ -1124,6 +1124,7 @@ private:
 
 #if XBEE_TELEM==ENABLED
 	void swarm_control_update(void);
+    void swarm_test(void);
 
 	mavlink_global_position_int_t neighbours[MAX_NEI];
 	uint16_t nei_mask;

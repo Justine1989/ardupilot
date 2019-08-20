@@ -2124,6 +2124,7 @@ void Plane::swarm_control_update(void)
                 vd_cmd = delta_x - DESIRED_REL_X;
                 phid_cmd = (delta_y - DESIRED_REL_Y) * 0.01;
                 hd_cmd = 0;
+                
                 float v_cmd = vc_cmd + vd_cmd;
                 float phi_cmd = phic_cmd + phid_cmd;
                 float h_cmd = hc_cmd + hd_cmd;
@@ -2137,8 +2138,8 @@ void Plane::swarm_control_update(void)
                 plane.guided_state.forced_rpy_cd.x = int32_t(phi_cmd * 18000 / M_PI);
 
                 // speed control
-                if(v_cmd > 30)
-                    v_cmd = 30;
+                //if(v_cmd > 30)
+                //    v_cmd = 30;
                 if(v_cmd < 10)
                     v_cmd = 10;
                 aparm.airspeed_cruise_cm.set(int32_t(v_cmd * 100));
