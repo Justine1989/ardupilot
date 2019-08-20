@@ -1079,54 +1079,58 @@ void Plane::swarm_test(void)
     uint32_t now_ms = AP_HAL::millis();
     mavlink_global_position_int_t gpos;
 
+    Location neighbor_loc;
+    Vector2f loc_diff, dis_vel, tar_vel, neighbor_vel;
+    Location self_loc = plane.current_loc;
+    int32_t self_hdg = plane.ahrs.yaw_sensor; //cetidegrees
+    if(self_hdg > 18000)
+        self_hdg = self_hdg - 36000;
+    int32_t hdg_diff = 0;
+    
     for(int i = 1; i < MAX_NEI; i++){
         if(!get_neighbours(i, gpos))continue;
 
         // Obtain the neighbors information
-        Location neighbor_loc;
+//        Location neighbor_loc;
         neighbor_loc.lat = gpos.lat;
         neighbor_loc.lng = gpos.lon;
-        neighbor_loc.alt = gpos.alt/10;//cm
+        neighbor_loc.alt = gpos.alt/10; //cm
 
-        Location self_loc = plane.current_loc;
-        Vector2f loc_diff = location_diff(self_loc, neighbor_loc);//m
-        Vector2f dis_vel = loc_diff.normalized() * (loc_diff.length() - DIS_STAB) * 100; //cm/s
+        loc_diff = location_diff(self_loc, neighbor_loc);//m
+        dis_vel = loc_diff.normalized() * (loc_diff.length() - DIS_STAB) * 100; //cm/s
 
-        Vector2f neighbor_vel(gpos.vx, gpos.vy); //cm/s
+        neighbor_vel = Vector2f(gpos.vx, gpos.vy); //cm/s
 //      float neighbor_speed = sqrt(pow(gpos.vx, 2) + pow(gpos.vy, 2) + pow(gpos.vz, 2));
 //      float self_speed = plane.airspeed.get_airspeed();
 //      float airspeed_diff = neighbor_speed - self_speed;
 
 //      int32_t neighbor_hdg = gpos.hdg;// * M_PI / 180 / 100;
-        int32_t self_hdg = plane.ahrs.yaw_sensor;// * M_PI / 180 / 100; //cetidegrees
 //      if(neighbor_hdg > 18000)
 //          neighbor_hdg = neighbor_hdg - 36000;
-        if(self_hdg > 18000)
-            self_hdg = self_hdg - 36000;
         
-        Vector2f tar_vel = dis_vel + neighbor_vel;//cm/s
+        tar_vel = dis_vel + neighbor_vel;//cm/s
         int32_t tar_hdg = (int32_t)degrees(atan2f(tar_vel.y, tar_vel.x)) * 100; //cetidegrees
         if(tar_hdg > 18000)
             tar_hdg = tar_hdg - 36000;
-        int32_t hdg_diff = tar_hdg - self_hdg;
+        hdg_diff = tar_hdg - self_hdg;
         if(hdg_diff > 18000) hdg_diff = hdg_diff - 36000;
         if(hdg_diff < -18000) hdg_diff = hdg_diff + 36000;
 
-        //swarm control
-        if(loc_diff.length() > DIS_THRESHOLD){
-            plane.next_WP_loc.lat = neighbor_loc.lat;
-            plane.next_WP_loc.lng = neighbor_loc.lng;
-        }else{
-            plane.guided_state.forced_rpy_cd.x = hdg_diff > 4500?4500:(hdg_diff < -4500?-4500:hdg_diff);
-            plane.guided_state.last_forced_rpy_ms.x = now_ms;
-
-            aparm.airspeed_cruise_cm.set(int32_t(tar_vel.length()));
-        }
-
-        plane.next_WP_loc.alt = neighbor_loc.alt;
-        plane.next_WP_loc.flags.relative_alt = true;
-        plane.reset_offset_altitude();
     }
+    //swarm control
+    if(loc_diff.length() > DIS_THRESHOLD){
+        plane.next_WP_loc.lat = neighbor_loc.lat;
+        plane.next_WP_loc.lng = neighbor_loc.lng;
+    }else{
+        plane.guided_state.forced_rpy_cd.x = hdg_diff > 4500?4500:(hdg_diff < -4500?-4500:hdg_diff);
+        plane.guided_state.last_forced_rpy_ms.x = now_ms;
+
+        aparm.airspeed_cruise_cm.set(int32_t(tar_vel.length()));
+    }
+
+    plane.next_WP_loc.alt = neighbor_loc.alt;
+    plane.next_WP_loc.flags.relative_alt = true;
+    plane.reset_offset_altitude();
 }
 #endif
 
