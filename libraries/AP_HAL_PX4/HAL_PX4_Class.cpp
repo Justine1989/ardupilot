@@ -124,10 +124,11 @@ HAL_PX4::HAL_PX4() :
         nullptr,    /* no onboard optical flow */
         &flashDriver,
         nullptr)   /* CAN */
+//#if XBEE_TELEM==ENABLED 
 {
-    uartDDriver.xbee_init(&PX4UARTDriver::rewrite_read,&PX4UARTDriver::rewrite_available,&uartDDriver);
+//    uartDDriver.xbee_init(&PX4UARTDriver::rewrite_read,&PX4UARTDriver::rewrite_available,&uartDDriver);
 }
-
+//#endif
 bool _px4_thread_should_exit = false;        /**< Daemon exit flag */
 static bool thread_running = false;        /**< Daemon status flag */
 static int daemon_task;                /**< Handle of daemon task / thread */

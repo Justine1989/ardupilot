@@ -37,7 +37,7 @@ public:
     virtual bool is_initialized() = 0;
     virtual void set_blocking_writes(bool blocking) = 0;
     virtual bool tx_pending() = 0;
-#if XBEE_TELEM==ENABLED
+//#if XBEE_TELEM==ENABLED
     virtual int16_t xbee_read();
     virtual size_t xbee_write(const uint8_t chan,const uint8_t *buffer,size_t size);
     virtual uint16_t xbee_available();
@@ -45,7 +45,7 @@ public:
     virtual uint16_t xbee_get_recv_add();
     virtual bool xbee_frame_finish(void);
     virtual bool xbee_frame_success(void);
-#endif
+//#endif
     // lock a port for exclusive use. Use a key of 0 to unlock
     virtual bool lock_port(uint32_t key) { return false; }
 

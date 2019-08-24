@@ -1564,7 +1564,7 @@ void Plane::gcs_retry_deferred(void)
     gcs().retry_deferred();
 }
 
-#if XBEE_TELEM==ENABLED
+//#if XBEE_TELEM==ENABLED
 bool Plane::update_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei){
 	if(sysid>=MAX_NEI)
 		return false;
@@ -1597,7 +1597,7 @@ void GCS_MAVLINK_Plane::update_check_lost_neighbours(void)
 {
     plane.check_lost_neighbours();
 }
-#endif
+//#endif
 
 /*
   return true if we will accept this packet. Used to implement SYSID_ENFORCE

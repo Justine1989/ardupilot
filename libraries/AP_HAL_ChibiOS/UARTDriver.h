@@ -22,13 +22,44 @@
 #include "shared_dma.h"
 #include "Semaphores.h"
 
+//#if XBEE_TELEM==ENABLED 
+
+#define XBEEMAXBUF 356
+#define XBEEMAXDATA 110
+class Xbee
+{
+public:
+	Xbee():targ_add(0xDFDF) {};
+	typedef uint8_t(ChibiOS::UARTDriver::*call_read)(void);
+	typedef uint16_t(ChibiOS::UARTDriver::*call_available)(void);
+	void xbee_init(call_read _read, call_available _available,ChibiOS::UARTDriver* _obj);
+	//uint16_t get_recv_add();
+protected:
+	uint16_t pack(const char *s, uint16_t lenth);
+	int16_t decode(void);
+	uint16_t data_available();
+	uint8_t pack_buf[XBEEMAXBUF];
+	uint16_t recv_add;
+	uint16_t targ_add;
+	bool operating;
+	bool success;
+private:
+	uint8_t check_sum;
+	uint8_t datalenth;
+	uint8_t Frame_ID;
+	call_read read;
+	call_available available;
+	ChibiOS::UARTDriver* obj;
+};
+//#endif
+
 #define RX_BOUNCE_BUFSIZE 128U
 #define TX_BOUNCE_BUFSIZE 64U
 
 // enough for uartA to uartG, plus IOMCU
 #define UART_MAX_DRIVERS 8
 
-class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
+class ChibiOS::UARTDriver : public AP_HAL::UARTDriver, public Xbee {
 public:
     UARTDriver(uint8_t serial_num);
 
@@ -45,6 +76,25 @@ public:
     uint32_t txspace() override;
     int16_t read() override;
     void _timer_tick(void) override;
+
+//#if XBEE_TELEM==ENABLED
+    uint8_t rewrite_read();
+    uint16_t rewrite_available();
+    uint16_t xbee_available();
+    int16_t xbee_read();
+    size_t xbee_write(const uint8_t chan,const uint8_t *buffer,size_t size);
+	uint16_t xbee_get_recv_add(){
+		return recv_add;
+	}
+	void xbee_set_targ_add(uint16_t _addr);
+	bool xbee_frame_finish(void){
+		return !operating;
+	}
+	bool xbee_frame_success(void){
+		return success;
+		success = false;
+	}
+//#endif
 
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);

@@ -117,17 +117,9 @@
 #include <SITL/SITL.h>
 #endif
 
-#if XBEE_TELEM==ENABLED
-//#include <cassert> 
-//#include <algorithm>
-//#include <iostream>
-//#include <string>
-//#include <iterator>
-//#include <vector>
-//#include <map>
-//using namespace std;
+//#if XBEE_TELEM==ENABLED
 #define MAX_NEI 10
-#endif
+//#endif
 
 /*
   a plane specific AP_AdvancedFailsafe class

@@ -19,6 +19,8 @@
 
 #include <assert.h>
 
+#include "AP_HAL_ChibiOS.h" //xbee
+#include "AP_HAL_ChibiOS_Namespace.h" //xbee
 #include "HAL_ChibiOS_Class.h"
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS_Private.h>
@@ -121,7 +123,9 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &flashDriver,
         nullptr
         )
-{}
+{
+    uartDDriver.xbee_init(&ChibiOS::UARTDriver::rewrite_read,&ChibiOS::UARTDriver::rewrite_available,&uartDDriver);
+}
 
 static bool thread_running = false;        /**< Daemon status flag */
 static thread_t* daemon_task;              /**< Handle of daemon task / thread */

@@ -6,9 +6,9 @@
 #include <systemlib/perf_counter.h>
 #include "Semaphores.h"
 
-#if XBEE_TELEM==ENABLED
+//#if XBEE_TELEM==ENABLED 
 
-#define XBEEMAXBUF 356
+/*#define XBEEMAXBUF 356
 #define XBEEMAXDATA 110
 class Xbee
 {
@@ -34,10 +34,10 @@ private:
 	call_read read;
 	call_available available;
 	PX4::PX4UARTDriver* obj;
-};
-#endif
+};*/
+//#endif
 
-class PX4::PX4UARTDriver : public AP_HAL::UARTDriver, public Xbee {
+class PX4::PX4UARTDriver : public AP_HAL::UARTDriver/*, public Xbee*/ {
 public:
     PX4UARTDriver(const char *devpath, const char *perf_name);
     /* PX4 implementations of UARTDriver virtual methods */
@@ -53,8 +53,8 @@ public:
     uint32_t available() override;
     uint32_t txspace() override;
     int16_t read() override;
-#if XBEE_TELEM==ENABLED
-    uint8_t rewrite_read();
+//#if XBEE_TELEM==ENABLED
+/*    uint8_t rewrite_read();
     uint16_t rewrite_available();
     uint16_t xbee_available();
     int16_t xbee_read();
@@ -69,8 +69,8 @@ public:
 	bool xbee_frame_success(void){
 		return success;
 		success = false;
-	}
-#endif
+	}*/
+//#endif
     /* PX4 implementations of Print virtual methods */
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);

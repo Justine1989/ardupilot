@@ -382,8 +382,8 @@ size_t PX4UARTDriver::write(const uint8_t *buffer, size_t size)
     return ret;
 }
 
-#if XBEE_TELEM==ENABLED
-uint8_t PX4UARTDriver::rewrite_read()
+//#if XBEE_TELEM==ENABLED
+/*uint8_t PX4UARTDriver::rewrite_read()
 {
     return (uint8_t)read();
 }
@@ -416,8 +416,8 @@ size_t PX4UARTDriver::xbee_write(const uint8_t chan ,const uint8_t *buffer, size
 void PX4UARTDriver::xbee_set_targ_add(uint16_t _addr)
 {
 	targ_add = _addr;
-}
-#endif
+}*/
+//#endif
 /*
   try writing n bytes, handling an unresponsive port
  */
@@ -601,9 +601,9 @@ uint64_t PX4UARTDriver::receive_time_constraint_us(uint16_t nbytes)
     return last_receive_us;
 }
 
-#if XBEE_TELEM==ENABLED
+//#if XBEE_TELEM==ENABLED
 
-void Xbee::xbee_init(call_read _read, call_available _available,PX4::PX4UARTDriver* _obj)
+/*void Xbee::xbee_init(call_read _read, call_available _available,PX4::PX4UARTDriver* _obj)
 {
     operating = false;
 	success = false;
@@ -702,7 +702,7 @@ uint16_t Xbee::data_available()
     }
     else
         return obj->available();
-}
-#endif //XBEE_TELEM
+}*/
+//#endif //XBEE_TELEM
 
-#endif
+//#endif

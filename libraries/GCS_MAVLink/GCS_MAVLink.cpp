@@ -65,7 +65,7 @@ void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
     }
 }
 
-#if XBEE_TELEM==ENABLED
+//#if XBEE_TELEM==ENABLED
 void GCS_MAVLINK::xbee_set_targ_add(uint16_t _addr)
 {
 	_port->xbee_set_targ_add(_addr);
@@ -75,7 +75,7 @@ uint16_t GCS_MAVLINK::xbee_get_recv_add(void)
 {
 	return _port->xbee_get_recv_add();
 }
-#endif
+//#endif
 
 // return a MAVLink variable type given a AP_Param type
 uint8_t mav_var_type(enum ap_var_type t)
@@ -126,11 +126,11 @@ uint16_t comm_get_available(mavlink_channel_t chan)
         return 0;
     }
     int16_t bytes = 0;
-#if XBEE_TELEM==ENABLED
+//#if XBEE_TELEM==ENABLED
 	if(chan == MAVLINK_COMM_2)
 		bytes = mavlink_comm_port[chan]->xbee_available();
 	else
-#endif
+//#endif
         bytes = mavlink_comm_port[chan]->available();
 	if (bytes == -1) {
 		return 0;
@@ -150,10 +150,10 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
         // an alternative protocol is active
         return;
     }
-#if XBEE_TELEM==ENABLED
+//#if XBEE_TELEM==ENABLED
     if (chan == MAVLINK_COMM_2 || chan >=5 )
         mavlink_comm_port[MAVLINK_COMM_2]->xbee_write(chan,buf,len);
     else
-#endif
+//#endif
         mavlink_comm_port[chan]->write(buf, len);
 }
