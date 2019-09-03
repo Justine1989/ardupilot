@@ -2076,7 +2076,9 @@ void Plane::swarm_control_update(void)
                 Location self_loc = plane.current_loc;
                 Vector2f loc_diff = location_diff(self_loc, neighbor_loc);
                 float neighbor_speed = sqrt(pow(gpos.vx, 2) + pow(gpos.vy, 2) + pow(gpos.vz, 2));
-                float self_speed = plane.airspeed.get_airspeed();
+//                float self_speed = plane.airspeed.get_airspeed();
+                const Vector3f &self_vel = gps.velocity();
+                float self_speed = sqrt(pow(self_vel.x,2) + pow(self_vel.y,2) + pow(self_vel.z,2));
                 float airspeed_diff = neighbor_speed - self_speed;
                 float neighbor_hdg = gpos.hdg * M_PI / 180 / 100;
                 float self_hdg = plane.ahrs.yaw_sensor * M_PI / 180 / 100;
@@ -2142,7 +2144,9 @@ void Plane::swarm_control_update(void)
                 //    v_cmd = 30;
                 if(v_cmd < 10)
                     v_cmd = 10;
-                aparm.airspeed_cruise_cm.set(int32_t(v_cmd * 100));
+//                aparm.airspeed_cruise_cm.set(int32_t(v_cmd * 100));
+                plane.guided_state.last_forced_throttle_ms = now_ms;
+                plane.guided_state.forced_throttle = (0.5 + 1*(v_cmd - self_speed))*100.0f;
 
                 // height control
                 plane.next_WP_loc.alt = int32_t(h_cmd * 100);

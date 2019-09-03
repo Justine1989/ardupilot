@@ -1086,7 +1086,10 @@ void Plane::swarm_test(void)
     if(self_hdg > 18000)
         self_hdg = self_hdg - 36000;
     int32_t hdg_diff = 0;
-    
+    const Vector3f &self_vel = gps.velocity();
+    const float self_speed = sqrt(pow(self_vel.x,2) + pow(self_vel.y,2) + pow(self_vel.z,2));
+    float tar_speed = 0;
+
     for(int i = 1; i < MAX_NEI; i++){
         if(!get_neighbours(i, gpos))continue;
 
@@ -1109,6 +1112,7 @@ void Plane::swarm_test(void)
 //          neighbor_hdg = neighbor_hdg - 36000;
         
         tar_vel = dis_vel + neighbor_vel;//cm/s
+        tar_speed = sqrt(pow(tar_vel.x,2) + pow(tar_vel.y,2)) * 0.01f;//m/s
         int32_t tar_hdg = (int32_t)degrees(atan2f(tar_vel.y, tar_vel.x)) * 100; //cetidegrees
         if(tar_hdg > 18000)
             tar_hdg = tar_hdg - 36000;
@@ -1125,7 +1129,9 @@ void Plane::swarm_test(void)
         plane.guided_state.forced_rpy_cd.x = hdg_diff > 4500?4500:(hdg_diff < -4500?-4500:hdg_diff);
         plane.guided_state.last_forced_rpy_ms.x = now_ms;
 
-        aparm.airspeed_cruise_cm.set(int32_t(tar_vel.length()));
+//        aparm.airspeed_cruise_cm.set(int32_t(tar_vel.length()));
+        plane.guided_state.last_forced_throttle_ms = now_ms;
+        plane.guided_state.forced_throttle = (0.5 + 1*(tar_speed - self_speed)) * 100.0f;
     }
 
     plane.next_WP_loc.alt = neighbor_loc.alt;
