@@ -1072,7 +1072,7 @@ float Plane::tecs_hgt_afe(void)
 #if XBEE_TELEM==ENABLED
 #define DIS_THRESHOLD 30
 #define DIS_STAB 10
-void Plane::swarm_test(void)
+/*void Plane::swarm_test(void)
 {
     if(control_mode != GUIDED)return;
 
@@ -1135,6 +1135,61 @@ void Plane::swarm_test(void)
     }
 
     plane.next_WP_loc.alt = neighbor_loc.alt;
+    plane.next_WP_loc.flags.relative_alt = true;
+    plane.reset_offset_altitude();
+}*/
+
+
+void Plane::swarm_test(void)
+{
+    if(control_mode != GUIDED)return;
+
+    uint32_t now_ms = AP_HAL::millis();
+    mavlink_global_position_int_t gpos;
+
+    Location neighbor_loc;
+    Vector2f loc_diff, neighbor_vel;
+    Location self_loc = plane.current_loc;
+    int32_t self_hdg = plane.ahrs.yaw_sensor; //cetidegrees
+    if(self_hdg > 18000)
+        self_hdg = self_hdg - 36000;
+    int32_t hdg_diff = 0;
+    const Vector3f &self_vel = gps.velocity();
+    const float self_speed = sqrt(pow(self_vel.x,2) + pow(self_vel.y,2) + pow(self_vel.z,2));
+    float tar_speed = 0;
+
+    Vector2f Fd(0,0), Fv(0,0), Vt;
+    for(int i = 1; i < MAX_NEI; i++){
+        if(!get_neighbours(i, gpos))continue;
+
+        // Obtain the neighbors information
+        neighbor_loc.lat = gpos.lat;
+        neighbor_loc.lng = gpos.lon;
+        neighbor_loc.alt = gpos.alt/10; //cm
+
+        loc_diff = location_diff(self_loc, neighbor_loc);//m
+        Fd = Fd - loc_diff.normalized()*logf(loc_diff.length()/10);
+        neighbor_vel = Vector2f(gpos.vx, gpos.vy); //cm/s
+        Fv = Fv + neighbor_vel/100.0f;//m/s
+
+    }
+    Vt = Fd*0.95f + Fv*0.05f;
+    int32_t tar_hdg = 100*atan2f(Vt.normalized().y, Vt.normalized().x)*180/M_PI;//角度
+    hdg_diff = tar_hdg - self_hdg;
+    if(hdg_diff > 18000) hdg_diff = hdg_diff - 36000;
+    if(hdg_diff < -18000) hdg_diff = hdg_diff + 36000;
+
+    //swarm control
+//    plane.next_WP_loc.lat = neighbor_loc.lat;
+//    plane.next_WP_loc.lng = neighbor_loc.lng;
+    plane.guided_state.forced_rpy_cd.x = hdg_diff > 4500?4500:(hdg_diff < -4500?-4500:hdg_diff);
+    plane.guided_state.last_forced_rpy_ms.x = now_ms;
+
+//  aparm.airspeed_cruise_cm.set(int32_t(tar_vel.length()));
+    plane.guided_state.last_forced_throttle_ms = now_ms;
+    plane.guided_state.forced_throttle = 100.0f;//(0.5 + 1*(tar_speed - self_speed)) * 100.0f;
+
+    plane.next_WP_loc.alt = 3000;//neighbor_loc.alt;
     plane.next_WP_loc.flags.relative_alt = true;
     plane.reset_offset_altitude();
 }
