@@ -1155,29 +1155,37 @@ void Plane::swarm_test(void)
         self_hdg = self_hdg - 36000;
     int32_t hdg_diff = 0;
     const Vector3f &self_vel = gps.velocity();
-    const float self_speed = sqrt(pow(self_vel.x,2) + pow(self_vel.y,2) + pow(self_vel.z,2));
-    float tar_speed = 0;
+//    const float self_speed = sqrt(pow(self_vel.x,2) + pow(self_vel.y,2) + pow(self_vel.z,2));
+//    float tar_speed = 0;
+    Vector2f range = location_diff(self_loc, plane.home);
 
     Vector2f Fd(0,0), Fv(0,0), Vt;
     for(int i = 1; i < MAX_NEI; i++){
         if(!get_neighbours(i, gpos))continue;
-
+//        if((gpos.time_boot_ms & (1<<31)) == 0)continue;
         // Obtain the neighbors information
         neighbor_loc.lat = gpos.lat;
         neighbor_loc.lng = gpos.lon;
         neighbor_loc.alt = gpos.alt/10; //cm
 
-        loc_diff = location_diff(self_loc, neighbor_loc);//m
+        loc_diff = location_diff(neighbor_loc, self_loc);//m
+//        gcs().send_text(MAV_SEVERITY_INFO, "\r\nloc_diff.len = %f\r\n", loc_diff.length());
+//        gcs().send_text(MAV_SEVERITY_INFO, "\r\nloc_diff = (%f, %f)\r\n", loc_diff.x, loc_diff.y);
         Fd = Fd - loc_diff.normalized()*logf(loc_diff.length()/10);
         neighbor_vel = Vector2f(gpos.vx, gpos.vy); //cm/s
         Fv = Fv + neighbor_vel/100.0f;//m/s
 
+//        gcs().send_text(MAV_SEVERITY_INFO, "\r\nnei_vel.len = %f\r\n", neighbor_vel.length());
+//        gcs().send_text(MAV_SEVERITY_INFO, "\r\nnei_vel = (%f, %f)\r\n", neighbor_vel.x, neighbor_vel.y);
     }
     Vt = Fd*0.95f + Fv*0.05f;
+    Vt.normalize();
+    if(range.length() > 300)Vt += range.normalized();
     int32_t tar_hdg = 100*atan2f(Vt.normalized().y, Vt.normalized().x)*180/M_PI;//角度
     hdg_diff = tar_hdg - self_hdg;
     if(hdg_diff > 18000) hdg_diff = hdg_diff - 36000;
     if(hdg_diff < -18000) hdg_diff = hdg_diff + 36000;
+    hdg_diff /= 2;
 
     //swarm control
 //    plane.next_WP_loc.lat = neighbor_loc.lat;
@@ -1187,7 +1195,7 @@ void Plane::swarm_test(void)
 
 //  aparm.airspeed_cruise_cm.set(int32_t(tar_vel.length()));
     plane.guided_state.last_forced_throttle_ms = now_ms;
-    plane.guided_state.forced_throttle = 100.0f;//(0.5 + 1*(tar_speed - self_speed)) * 100.0f;
+    plane.guided_state.forced_throttle = 80.0f;//(0.5 + 1*(tar_speed - self_speed)) * 100.0f;
 
     plane.next_WP_loc.alt = 3000;//neighbor_loc.alt;
     plane.next_WP_loc.flags.relative_alt = true;

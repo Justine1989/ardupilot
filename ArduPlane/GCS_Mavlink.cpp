@@ -189,6 +189,13 @@ void Plane::send_location(mavlink_channel_t chan)
     }
     const Vector3f &vel = gps.velocity();
 #if XBEE_TELEM==ENABLED
+    fix_time_ms &= 0x00FFFFFF;
+    fix_time_ms |= (uint8_t)nei_mask << 24;
+    if(plane.arming.is_armed()){
+        fix_time_ms |= 1<<31;
+    }else{
+        fix_time_ms &= ~(1<<31);
+    }
 	gcs().chan(MAVLINK_COMM_2).xbee_set_targ_add(0xFFFF);
 #endif
     mavlink_msg_global_position_int_send(
@@ -2249,7 +2256,7 @@ void Plane::check_lost_neighbours(void){
 	uint32_t now = AP_HAL::millis();
 	for(auto i = 0;i < MAX_NEI; i++){
 		if(nei_mask&(1<<i))
-			if(now - neighbours[i].time_boot_ms > 1000)
+			if((now & 0x00FFFFFF) - (neighbours[i].time_boot_ms & 0x00FFFFFF) > 1000)
 				nei_mask &= ~(1<<i);
 	}
 }

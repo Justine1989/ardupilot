@@ -897,7 +897,8 @@ GCS_MAVLINK::update(run_cli_fn run_cli, uint32_t max_time_us)
 			if(chan==MAVLINK_COMM_2&&msg.sysid!=255/*&&msg.sysid!=plane.g.sysid_my_gcs()*/){
 				mavlink_global_position_int_t gpos;
 				mavlink_msg_global_position_int_decode(&msg, &gpos);
-				gpos.time_boot_ms = now;
+                gpos.time_boot_ms &= 0xFF000000;
+				gpos.time_boot_ms |= now & 0x00FFFFFF;
 				update_neighbours_state(msg.sysid,gpos);
 //				hal.uartE->printf("sysid:%i, time: %u, yaw: %i\r\n", msg.sysid, gpos.time_boot_ms, gpos.hdg);
 			}
