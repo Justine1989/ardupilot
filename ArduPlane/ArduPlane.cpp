@@ -1139,7 +1139,8 @@ float Plane::tecs_hgt_afe(void)
     plane.reset_offset_altitude();
 }*/
 
-
+#define DISTANCE_SAVE 15
+#define DISTANCE_RANGE 200
 void Plane::swarm_test(void)
 {
     if(control_mode != GUIDED)return;
@@ -1159,7 +1160,7 @@ void Plane::swarm_test(void)
 //    float tar_speed = 0;
     Vector2f range = location_diff(self_loc, plane.home);
 
-    Vector2f Fd(0,0), Fv(0,0), Vt;
+    Vector2f Fd(0,0), Fv(self_vel.x, self_vel.y), Vt;
     for(int i = 1; i < MAX_NEI; i++){
         if(!get_neighbours(i, gpos))continue;
 //        if((gpos.time_boot_ms & (1<<31)) == 0)continue;
@@ -1171,7 +1172,7 @@ void Plane::swarm_test(void)
         loc_diff = location_diff(neighbor_loc, self_loc);//m
 //        gcs().send_text(MAV_SEVERITY_INFO, "\r\nloc_diff.len = %f\r\n", loc_diff.length());
 //        gcs().send_text(MAV_SEVERITY_INFO, "\r\nloc_diff = (%f, %f)\r\n", loc_diff.x, loc_diff.y);
-        Fd = Fd - loc_diff.normalized()*logf(loc_diff.length()/10);
+        Fd = Fd - loc_diff.normalized()*logf(loc_diff.length()/DISTANCE_SAVE);
         neighbor_vel = Vector2f(gpos.vx, gpos.vy); //cm/s
         Fv = Fv + neighbor_vel/100.0f;//m/s
 
@@ -1180,7 +1181,7 @@ void Plane::swarm_test(void)
     }
     Vt = Fd*0.95f + Fv*0.05f;
     Vt.normalize();
-    if(range.length() > 300)Vt += range.normalized();
+    if(range.length() > DISTANCE_RANGE)Vt += range.normalized();
     int32_t tar_hdg = 100*atan2f(Vt.normalized().y, Vt.normalized().x)*180/M_PI;//角度
     hdg_diff = tar_hdg - self_hdg;
     if(hdg_diff > 18000) hdg_diff = hdg_diff - 36000;
