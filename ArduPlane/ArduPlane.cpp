@@ -1139,7 +1139,7 @@ float Plane::tecs_hgt_afe(void)
     plane.reset_offset_altitude();
 }*/
 
-#define DISTANCE_SAVE 15
+#define DISTANCE_SAVE 13
 #define DISTANCE_RANGE 200
 void Plane::swarm_test(void)
 {
@@ -1161,7 +1161,7 @@ void Plane::swarm_test(void)
     Vector2f range = location_diff(self_loc, plane.home);
 
     Vector2f Fd(0,0), Fv(self_vel.x, self_vel.y), Vt;
-    for(int i = 1; i < MAX_NEI; i++){
+    for(int i = 1; i < 7; i++){
         if(!get_neighbours(i, gpos))continue;
 //        if((gpos.time_boot_ms & (1<<31)) == 0)continue;
         // Obtain the neighbors information
@@ -1186,7 +1186,7 @@ void Plane::swarm_test(void)
     hdg_diff = tar_hdg - self_hdg;
     if(hdg_diff > 18000) hdg_diff = hdg_diff - 36000;
     if(hdg_diff < -18000) hdg_diff = hdg_diff + 36000;
-    hdg_diff /= 2;
+//    hdg_diff /= 2;
 
     //swarm control
 //    plane.next_WP_loc.lat = neighbor_loc.lat;
@@ -1194,11 +1194,11 @@ void Plane::swarm_test(void)
     plane.guided_state.forced_rpy_cd.x = hdg_diff > 4500?4500:(hdg_diff < -4500?-4500:hdg_diff);
     plane.guided_state.last_forced_rpy_ms.x = now_ms;
 
-//  aparm.airspeed_cruise_cm.set(int32_t(tar_vel.length()));
+//    aparm.airspeed_cruise_cm.set(int32_t(1000));
     plane.guided_state.last_forced_throttle_ms = now_ms;
     plane.guided_state.forced_throttle = 80.0f;//(0.5 + 1*(tar_speed - self_speed)) * 100.0f;
 
-    plane.next_WP_loc.alt = 3000;//neighbor_loc.alt;
+    plane.next_WP_loc.alt = 2500;//neighbor_loc.alt;
     plane.next_WP_loc.flags.relative_alt = true;
     plane.reset_offset_altitude();
 }
