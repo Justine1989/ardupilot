@@ -190,12 +190,18 @@ void Plane::send_location(mavlink_channel_t chan)
     const Vector3f &vel = gps.velocity();
 #if XBEE_TELEM==ENABLED
     fix_time_ms &= 0x00FFFFFF;
-    fix_time_ms |= (uint8_t)nei_mask << 24;
+    /*fix_time_ms |= (uint8_t)nei_mask << 24;
     if(plane.arming.is_armed()){
         fix_time_ms |= 1<<31;
     }else{
         fix_time_ms &= ~(1<<31);
-    }
+    } */
+    //传递转弯信号
+    if(turn_sig)
+        fix_time_ms |= 1<<31;
+    else
+        fix_time_ms &= ~(1<<31);
+        
 	gcs().chan(MAVLINK_COMM_2).xbee_set_targ_add(0xFFFF);
 #endif
     mavlink_msg_global_position_int_send(

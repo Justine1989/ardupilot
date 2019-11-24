@@ -113,6 +113,10 @@ void Plane::setup()
 
     // initialise the main loop scheduler
     scheduler.init(&scheduler_tasks[0], ARRAY_SIZE(scheduler_tasks));
+
+#if XBEE_TELEM==ENABLED
+    turn_sig = false;
+#endif
 }
 
 void Plane::loop()
@@ -1156,11 +1160,12 @@ void Plane::swarm_test(void)
         self_hdg = self_hdg - 36000;
     int32_t hdg_diff = 0;
     const Vector3f &self_vel = gps.velocity();
-//    const float self_speed = sqrt(pow(self_vel.x,2) + pow(self_vel.y,2) + pow(self_vel.z,2));
-//    float tar_speed = 0;
+
     Vector2f range = location_diff(self_loc, plane.home);
 
     Vector2f Fd(0,0), Fv(self_vel.x, self_vel.y), Vt;
+    bool turn_nei = false;
+    Vector2f turn_nei_vei;
     for(int i = 1; i < 7; i++){
         if(!get_neighbours(i, gpos))continue;
 //        if((gpos.time_boot_ms & (1<<31)) == 0)continue;
@@ -1176,12 +1181,27 @@ void Plane::swarm_test(void)
         neighbor_vel = Vector2f(gpos.vx, gpos.vy); //cm/s
         Fv = Fv + neighbor_vel/100.0f;//m/s
 
+        if(!turn_nei && gpos.time_boot_ms & (1<<31)){
+            turn_nei_vei = neighbor_vel/100.0f;
+            turn_nei = true;
+        }
 //        gcs().send_text(MAV_SEVERITY_INFO, "\r\nnei_vel.len = %f\r\n", neighbor_vel.length());
 //        gcs().send_text(MAV_SEVERITY_INFO, "\r\nnei_vel = (%f, %f)\r\n", neighbor_vel.x, neighbor_vel.y);
     }
-    Vt = Fd*0.95f + Fv*0.05f;
+    if(turn_nei)
+        Vt = Fd*0.95f + neighbor_vel*0.05f/100.0f;
+    else
+        Vt = Fd*0.95f + Fv*0.05f;
     Vt.normalize();
-    if(range.length() > DISTANCE_RANGE)Vt += range.normalized();
+
+    if(range.length() > DISTANCE_RANGE){
+        Vt += range.normalized();
+        turn_sig = true;
+    }else
+    {
+        turn_sig = false;
+    }
+    
     int32_t tar_hdg = 100*atan2f(Vt.normalized().y, Vt.normalized().x)*180/M_PI;//角度
     hdg_diff = tar_hdg - self_hdg;
     if(hdg_diff > 18000) hdg_diff = hdg_diff - 36000;

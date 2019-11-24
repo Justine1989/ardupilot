@@ -1128,6 +1128,7 @@ private:
 
 	mavlink_global_position_int_t neighbours[MAX_NEI];
 	uint16_t nei_mask;
+    bool turn_sig;
 
 	bool update_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei);
 	bool get_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei);
