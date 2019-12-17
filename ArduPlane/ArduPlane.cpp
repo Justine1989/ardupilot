@@ -106,6 +106,10 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if LANDING_GEAR_ENABLED == ENABLED
     SCHED_TASK(landing_gear_update, 5, 50),
 #endif
+
+#if MODIFIED_FLAG==ENABLED
+    SCHED_TASK(swarm_allay_test, 50, 50),
+#endif
 };
 
 constexpr int8_t Plane::_failsafe_priorities[7];
@@ -642,7 +646,29 @@ void Plane::update_flight_stage(void)
     }
 }
 
+#if MODIFIED_FLAG==ENABLED
+void Plane::swarm_allay_test()
+{
+     //测试3:将测试1和测试2结合,高度可控(√)
+    prev_WP_loc = current_loc;
+    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, plane.get_RTL_altitude());
 
+    if (aparm.loiter_radius < 0 || next_WP_loc.loiter_ccw)
+    {
+        loiter.direction = -1;
+    } else {
+        loiter.direction = 1;
+    }
+
+    setup_glide_slope();
+    setup_turn_angle();
+
+    auto_state.crosstrack = false;              // disable crosstrack, head directly to the point
+    loiter.start_time_ms = 0;                    // reset loiter start time.
+    auto_state.vtol_loiter = false;             // start in non-VTOL mode
+    loiter_angle_reset();
+}
+#endif
 
 
 /*

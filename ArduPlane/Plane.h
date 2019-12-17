@@ -1053,6 +1053,9 @@ private:
     void update_soaring();
 #endif
 
+#if MODIFIED_FLAG==ENABLED
+    void swarm_allay_test(void);
+#endif
     bool reversed_throttle;
     bool have_reverse_throttle_rc_option;
     bool allow_reverse_thrust(void) const;
