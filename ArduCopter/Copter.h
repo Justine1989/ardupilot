@@ -293,6 +293,10 @@ private:
         bool valid_for_logging;     // true if target_alt_cm is valid for logging
     } surface_tracking;
 
+#if MODIFIED_FALG==ENABLED
+void set_desire_velocity(void);
+#endif
+
 #if RPM_ENABLED == ENABLED
     AP_RPM rpm_sensor;
 #endif

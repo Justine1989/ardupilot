@@ -200,6 +200,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if OSD_ENABLED == ENABLED
     SCHED_TASK(publish_osd_info, 1, 10),
 #endif
+
+#if MODIFIED_FALG==ENABLED
+SCHED_TASK(set_desire_velocity, 50, 100),
+#endif
 };
 
 constexpr int8_t Copter::_failsafe_priorities[7];
@@ -587,6 +591,27 @@ void Copter::publish_osd_info()
     nav_info.wp_xtrack_error = flightmode->crosstrack_error() * 1.0e-2f;
     nav_info.wp_number = mode_auto.mission.get_current_nav_index();
     osd.set_nav_info(nav_info);
+}
+#endif
+
+#if MODIFIED_FALG==ENABLED
+void Copter::set_desire_velocity()
+{
+    if(copter.flightmode->in_guided_mode())
+    {
+        Vector3f desire_vel;
+
+        float yaw_cd = 0.0f;
+        bool yaw_relative = false;
+        float yaw_rate_cds = 0.0f;
+
+        desire_vel.x=1.5f;
+        desire_vel.y=0.0f;
+        desire_vel.z=0.0f;
+
+        copter.mode_guided.set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), true, yaw_cd, true, yaw_rate_cds, yaw_relative);
+
+    }
 }
 #endif
 
