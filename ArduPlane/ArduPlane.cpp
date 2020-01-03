@@ -85,7 +85,8 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(stats_update,            1,    100),
 #if XBEE_TELEM==ENABLED
 //	SCHED_TASK(swarm_control_update,	10,   200),
-    SCHED_TASK(swarm_test,          	10,   200),
+//  SCHED_TASK(swarm_test,          	10,   200),     //formation with neighbours
+    SCHED_TASK(swarm_test1,          	10,   200),     //swarm allay at home point
 #endif
 };
 
@@ -1201,6 +1202,34 @@ void Plane::swarm_test(void)
     plane.next_WP_loc.alt = 2500;//neighbor_loc.alt;
     plane.next_WP_loc.flags.relative_alt = true;
     plane.reset_offset_altitude();
+}
+
+//swarm allay at home point
+void Plane::swarm_test1(void)
+{
+    if(control_mode == GUIDED)
+    {
+        prev_WP_loc = current_loc;
+        next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, plane.get_RTL_altitude());
+
+        if (aparm.loiter_radius < 0 || next_WP_loc.flags.loiter_ccw) {
+            loiter.direction = -1;
+            } else {
+                loiter.direction = 1;
+            }
+
+        setup_glide_slope();
+        setup_turn_angle();
+
+        auto_state.next_wp_no_crosstrack=true;
+        // reset loiter start time.
+        loiter.start_time_ms = 0;
+
+        // start in non-VTOL mode
+        auto_state.vtol_loiter = false;
+        
+        loiter_angle_reset();
+    }
 }
 #endif
 

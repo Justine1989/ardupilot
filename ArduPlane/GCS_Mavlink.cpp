@@ -101,6 +101,13 @@ void Plane::send_heartbeat(mavlink_channel_t chan)
     // indicate we have set a custom mode
     base_mode |= MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
 
+    #if XBEE_TELEM==ENABLED
+	gcs().chan(MAVLINK_COMM_2).xbee_set_targ_add(0xFFFF);
+    gcs().chan(MAVLINK_COMM_2).send_heartbeat(quadplane.get_mav_type(),
+                                                   base_mode,
+                                                   custom_mode,
+                                                   system_status);
+    #endif
     gcs().chan(chan-MAVLINK_COMM_0).send_heartbeat(quadplane.get_mav_type(),
                                                    base_mode,
                                                    custom_mode,
@@ -2182,6 +2189,10 @@ bool GCS_MAVLINK_Plane::update_neighbours_state(uint8_t sysid,mavlink_global_pos
     return plane.update_neighbours(sysid,sta);
 }
 
+bool GCS_MAVLINK_Plane::update_neighbours_mode(uint8_t sysid,mavlink_heartbeat_t& hbt)
+{
+    return plane.update_neighbours2(sysid,hbt);
+}
 void GCS_MAVLINK_Plane::update_check_lost_neighbours(void)
 {
     plane.check_lost_neighbours();
@@ -2238,6 +2249,7 @@ AP_Rally *GCS_MAVLINK_Plane::get_rally() const
 
 
 #if XBEE_TELEM==ENABLED
+//update neighbours global position
 bool Plane::update_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei){
 	if(sysid>=MAX_NEI)
 		return false;
@@ -2245,6 +2257,16 @@ bool Plane::update_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei){
 	nei_mask |= 1<<sysid;
 	return true;
 }
+//update neighbours flight mode
+bool Plane::update_neighbours2(uint8_t sysid,mavlink_heartbeat_t& Nei){
+	if(sysid>=MAX_NEI)
+		return false;
+	Neighbours[sysid] = Nei;
+	Nei_mask |= 1<<sysid;
+	return true;
+}
+
+//get neighbours global position
 bool Plane::get_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei){
 	if(nei_mask&(1<<sysid))
 		nei = neighbours[sysid];
@@ -2252,6 +2274,16 @@ bool Plane::get_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei){
 		return false;
 	return true;
 }
+
+//get neighbours flight mode
+bool Plane::get_neighbours2(uint8_t sysid,mavlink_heartbeat_t& Nei){
+	if(Nei_mask&(1<<sysid))
+		Nei = Neighbours[sysid];
+	else
+		return false;
+	return true;
+}
+
 void Plane::check_lost_neighbours(void){
 	uint32_t now = AP_HAL::millis();
 	for(auto i = 0;i < MAX_NEI; i++){

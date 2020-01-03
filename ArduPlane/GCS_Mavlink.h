@@ -30,6 +30,7 @@ protected:
 
 #if XBEE_TELEM==ENABLED
     bool update_neighbours_state(uint8_t sysid,mavlink_global_position_int_t& sta) override;
+    bool update_neighbours_mode(uint8_t sysid,mavlink_heartbeat_t& hbt) override;
     void update_check_lost_neighbours(void) override;
 #endif
 

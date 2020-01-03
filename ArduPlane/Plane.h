@@ -1125,13 +1125,21 @@ private:
 #if XBEE_TELEM==ENABLED
 	void swarm_control_update(void);
     void swarm_test(void);
+    void swarm_test1(void);                 //
 
 	mavlink_global_position_int_t neighbours[MAX_NEI];
-	uint16_t nei_mask;
+    mavlink_heartbeat_t Neighbours[MAX_NEI];
 
-	bool update_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei);
-	bool get_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei);
-	void check_lost_neighbours(void);
+	uint16_t nei_mask;
+    uint16_t Nei_mask;
+
+	bool update_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei);       //update neighbours global position
+    bool update_neighbours2(uint8_t sysid,mavlink_heartbeat_t& Nei);                //update neighbours flight mode
+	
+    bool get_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei);          //get neighbours global position
+    bool get_neighbours2(uint8_t sysid,mavlink_heartbeat_t& Nei);                   //update neighbours flight mode 
+	
+    void check_lost_neighbours(void);   
 #endif
 
 public:

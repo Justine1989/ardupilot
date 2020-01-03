@@ -313,7 +313,8 @@ protected:
     MAV_RESULT handle_command_long_message(mavlink_command_long_t &packet);
 
 #if XBEE_TELEM==ENABLED
-    virtual bool update_neighbours_state(uint8_t sysid,mavlink_global_position_int_t& sta) = 0;
+    virtual bool update_neighbours_state(uint8_t sysid,mavlink_global_position_int_t& sta) = 0; //get neighbours global position
+    virtual bool update_neighbours_mode(uint8_t sysid,mavlink_heartbeat_t& hbt)=0;          //get neighbours flight mode
     virtual void update_check_lost_neighbours(void) = 0;
 #endif
 
