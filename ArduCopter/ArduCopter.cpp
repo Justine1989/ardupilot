@@ -157,6 +157,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
     SCHED_TASK(button_update,          5,    100),
     SCHED_TASK(stats_update,           1,    100),
+#if XBEE_TELEM==ENABLED
+//  SCHED_TASK(swarm_formation,        10,    100),             //swarm formation
+    SCHED_TASK(swarm_test,             10,    100),            //a copter fly with desired velocity
+#endif
 };
 
 
@@ -619,4 +623,26 @@ void Copter::update_altitude()
     }
 }
 
+#if XBEE_TELEM==ENABLED
+/*==================copter fly with desired velocity================*/
+void Copter::swarm_test()
+{
+    if(copter.control_mode==GUIDED)
+    {
+        Vector3f desire_vel;
+
+        float yaw_cd = 0.0f;
+        bool yaw_relative = false;
+        float yaw_rate_cds = 0.0f;
+
+        desire_vel.x=1.5f;
+        desire_vel.y=0.0f;
+        desire_vel.z=0.0f;
+        
+        copter.guided_set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), true, yaw_cd, true, yaw_rate_cds, yaw_relative);
+    
+    }   
+
+}
+#endif
 AP_HAL_MAIN_CALLBACKS(&copter);

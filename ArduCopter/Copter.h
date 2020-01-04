@@ -133,6 +133,17 @@
 #include <SITL/SITL.h>
 #endif
 
+#if XBEE_TELEM==ENABLED
+//#include <cassert> 
+//#include <algorithm>
+//#include <iostream>
+//#include <string>
+//#include <iterator>
+//#include <vector>
+//#include <map>
+//using namespace std;
+#define MAX_NEI 10
+#endif
 
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
@@ -1157,6 +1168,26 @@ private:
     void init_capabilities(void);
     void dataflash_periodic(void);
     void accel_cal_update(void);
+
+#if XBEE_TELEM==ENABLED
+
+	void swarm_formation(void);        //swarm formation
+    void swarm_test(void);             //a copter fly with desired velocity
+
+	mavlink_global_position_int_t neighbours[MAX_NEI];
+    mavlink_heartbeat_t Neighbours[MAX_NEI];
+
+	uint16_t nei_mask;
+    uint16_t Nei_mask;
+
+	bool update_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei);       //update neighbours global position
+    bool update_neighbours2(uint8_t sysid,mavlink_heartbeat_t& Nei);                //update neighbours flight mode
+	
+    bool get_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei);          //get neighbours global position
+    bool get_neighbours2(uint8_t sysid,mavlink_heartbeat_t& Nei);                   //update neighbours flight mode 
+	
+    void check_lost_neighbours(void);   
+#endif
 
 public:
     void mavlink_delay_cb();

@@ -650,3 +650,7 @@
 #ifndef ADVANCED_FAILSAFE
 # define ADVANCED_FAILSAFE DISABLED
 #endif
+
+#ifndef XBEE_TELEM
+#define XBEE_TELEM ENABLED
+#endif
