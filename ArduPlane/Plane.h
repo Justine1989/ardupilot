@@ -1127,6 +1127,8 @@ private:
     void swarm_test(void);                  //swarm formation 
     void swarm_test1(void);                 //swarm allay at home point
     void swarm_test2(void);                 //signal plane tracking an object
+    void swarm_object_tracking(void);       //swarm tracking an object
+    float rad_diff(float rad1, float rad2); //use with function swarm_object_tracking(void)
 
 	mavlink_global_position_int_t neighbours[MAX_NEI];
     mavlink_heartbeat_t Neighbours[MAX_NEI];

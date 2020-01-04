@@ -2199,6 +2199,263 @@ void GCS_MAVLINK_Plane::update_check_lost_neighbours(void)
 }
 #endif
 
+/* ===========================swarm plane tracking an object(copter)==========================*/
+#if XBEE_TELEM==ENABLED
+
+#define DES_PHI M_PI*2/3            //期望航向角    
+#define VEL_CRUISE 20               //巡航速度
+#define PARAM_K 0.1                 //参数k
+#define UGV_VX 3                    //目标X轴速度
+#define UGV_VY 0                    //目标Y轴速度
+#define TRACKING_DIS 50             //对峙距离，单位：m
+
+void Plane::swarm_object_tracking(void)
+{
+    static uint8_t flag1=1;
+    static uint8_t flag2=0;
+    if(control_mode != GUIDED) return;
+
+    mavlink_global_position_int_t gpos;
+    mavlink_heartbeat_t hbt;
+
+    uint32_t now_ms = AP_HAL::millis();
+    uint8_t UAV_num=0;                        //考虑到可能出现通信不上的情况,线程每次都要判断网络中无人机的数量
+    static float omega;
+    static uint8_t self_sysid;
+
+    if(control_mode == GUIDED)
+    {
+        //step1:循环获取邻居消息
+        for(int i = 0;i < MAX_NEI;i++)
+        {
+            //获取邻居的两个mavlink消息：位置+模式
+            //if(get_neighbours(i,gpos,hbt))
+            if(get_neighbours(i,gpos))
+            {
+                UAV_num=UAV_num+1;             //统计通信网络中的个数
+            }
+            else
+            {
+                self_sysid=i;                //获取当前飞机自身的sysid
+                UAV_num=UAV_num+1;
+            }
+        }
+
+        //step2:判断目标的飞行模式
+        while(flag1==1)
+        {
+            for(int i=0;i<MAX_NEI;i++)
+            {
+                if(i!=self_sysid)
+                    //设置目标的sysid为9
+                    if(i==9)
+                    {
+                        //如果目标不为guided模式，则在home点集结,且只执行一次
+                        if(get_neighbours2(i,hbt))
+                        {
+                            if(hbt.base_mode!=GUIDED)
+                            {
+                                prev_WP_loc = current_loc;
+                                next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, plane.get_RTL_altitude());
+
+                                if (aparm.loiter_radius < 0 || next_WP_loc.flags.loiter_ccw) 
+                                {
+                                    loiter.direction = -1;
+                                } 
+                                else
+                                {
+                                    loiter.direction = 1;
+                                }
+
+                                setup_glide_slope();
+                                setup_turn_angle();
+
+                                auto_state.next_wp_no_crosstrack=true;
+                                // reset loiter start time.
+                                loiter.start_time_ms = 0;
+
+                                // start in non-VTOL mode
+                                auto_state.vtol_loiter = false;
+                                
+                                loiter_angle_reset();
+                            }
+
+                            //如果目标为guided模式，置标志位
+                            else
+                            {
+                                flag1=0;
+                                flag2=1;            //可以使用任务管理
+                            }
+                            
+                        }
+                    }
+                
+                }
+            }
+        //step3:对目标进行跟踪,设计飞行控制率
+        while(flag2==1)
+        {
+            float self_hdg,neighbor_hdg;
+            self_hdg = plane.ahrs.yaw_sensor * M_PI / 180 / 100;
+            float temp;
+
+            //step3.1:计算期望速度
+            if(self_sysid==1)
+            {
+                //if(get_neighbours(2,gpos,hbt))
+                if(get_neighbours(2,gpos))
+                {
+                    neighbor_hdg = gpos.hdg * M_PI / 180 / 100;
+                    temp=rad_diff(neighbor_hdg,self_hdg)-DES_PHI; 
+                }
+            }
+            else if(self_sysid==(UAV_num-1))   
+            {
+                //if(get_neighbours(self_sysid-1,gpos,hbt))
+                if(get_neighbours(self_sysid-1,gpos))
+                {
+                    neighbor_hdg = gpos.hdg * M_PI / 180 / 100;
+                    temp=-rad_diff(neighbor_hdg,self_hdg)+DES_PHI; 
+                }
+            }
+            else
+            {
+                float temp1=0.0;
+                //if(get_neighbours(self_sysid+1,gpos,hbt))
+                if(get_neighbours(self_sysid+1,gpos))
+                {
+                    neighbor_hdg= gpos.hdg * M_PI / 180 / 100;
+                    temp1=rad_diff(neighbor_hdg,self_hdg);
+                }
+
+                float temp2=0.0;
+               //if(get_neighbours(self_sysid-1,gpos,hbt))
+               if(get_neighbours(self_sysid-1,gpos))
+                {
+                    neighbor_hdg= gpos.hdg * M_PI / 180 / 100;
+                    temp2=rad_diff(neighbor_hdg,self_hdg);
+                }
+                temp=temp1+temp2;   
+                temp=temp1;
+            }
+            omega=temp;              
+            temp=0.0;              //清除一下
+
+            float v_cmd=PARAM_K*omega*TRACKING_DIS+VEL_CRUISE;               //期望速度
+            const Vector3f &self_vel = gps.velocity();
+            float self_speed = sqrt(pow(self_vel.x,2) + pow(self_vel.y,2) + pow(self_vel.z,2));
+
+            //期望速度校正+目标速度
+            v_cmd=sqrtf((v_cmd*cosf(self_hdg)+UGV_VX)*(v_cmd*cosf(self_hdg)+UGV_VX)+(v_cmd*sinf(self_hdg)+UGV_VY)*(v_cmd*sinf(self_hdg)+UGV_VY));
+            //期望速度限幅
+            if(v_cmd > 30)
+               v_cmd = 30;
+            if(v_cmd < 10)
+               v_cmd = 10;
+            plane.guided_state.last_forced_throttle_ms = now_ms;
+            plane.guided_state.forced_throttle = (0.5 + 1*(v_cmd - self_speed))*100.0f;     //将速度转化为油门开度
+
+            //step3.2:计算航向角
+            Location neighbor_loc;                                  //目标位置
+            Location self_loc = plane.current_loc;                  //当前飞机位置
+            //if(get_neighbours(9,gpos,hbt)) 
+            if(get_neighbours(9,gpos))         
+            {                
+                neighbor_loc.lat = gpos.lat;
+                neighbor_loc.lng = gpos.lon;
+                neighbor_loc.alt = gpos.alt/10;
+            }
+
+            double r1,r2;
+            float eta;
+            r1=TRACKING_DIS;
+            r2=r1;
+            Vector2f loc_diff = location_diff(self_loc, neighbor_loc);
+            double loc_diff_norm=sqrt(loc_diff.x*loc_diff.y+loc_diff.y*loc_diff.y);
+            if(loc_diff_norm>r1+r2)
+            {
+                eta=atan2f(-loc_diff.y,-loc_diff.x);    
+            }
+            else if(loc_diff_norm<(r1-r2))
+            {
+                eta=atan2f(loc_diff.y,loc_diff.x);
+            }
+            else
+            {
+                float a,b,c,theta1,theta2,theta;
+                a=2*((float)r1)*(-loc_diff.x);
+                b=2*((float)r1)*(-loc_diff.y);
+                c=((float)(r2*r2))-((float)(r1*r1))-(loc_diff.x*loc_diff.x)-(loc_diff.y*loc_diff.y);
+
+                theta1=acosf(c/sqrtf(a*a+b*b));         //后期可以用向量或矩阵运算
+                theta2=atan2f(b/sqrtf(a*a+b*b),a/sqrtf(a*a+b*b));
+                if((theta1+theta2)<0)
+                {
+                    theta1=theta1+theta2+M_PI*2;            //重新赋值
+                }
+                if((-theta1+theta2)<0)
+                {
+                    theta2=-theta1+theta2+M_PI*2;           //重新赋值
+                }
+                //theta1,theta2升序排列
+                if(theta1>=theta2)
+                {
+                    float temp0;
+                    temp0=theta1;
+                    theta1=theta2;
+                    theta2=temp0;  
+                }
+                //
+                if((theta2-theta1)>M_PI)
+                {
+                    theta=theta1;
+                }
+                else
+                {
+                     theta=theta2;
+                }
+                
+                eta=atan2f(((float)r1)*cosf(theta)-loc_diff.x,((float)r1)*sinf(theta)-loc_diff.y);//
+            }
+            
+            float acc,turn_rate;
+            acc=2*v_cmd*v_cmd*sinf(eta)/TRACKING_DIS;           //非线性导引法向加速度
+            turn_rate=acc/v_cmd;                                //rpy
+             // roll control
+            if(turn_rate >= M_PI / 4)
+                turn_rate = M_PI / 4;
+            if(turn_rate <= -M_PI / 4)
+                turn_rate = -M_PI / 4;
+            plane.guided_state.last_forced_rpy_ms.x = now_ms;       //????
+            plane.guided_state.forced_rpy_cd.x = int32_t(turn_rate * 18000 / M_PI);
+
+            //step3.3:高度控制
+            float h_cmd=15;             
+            plane.next_WP_loc.alt = int32_t(h_cmd * 100);
+            plane.next_WP_loc.alt += plane.home.alt;
+            plane.next_WP_loc.flags.relative_alt = false;
+            plane.reset_offset_altitude();
+
+            if(control_mode != GUIDED)
+            {
+                flag1=1;                    
+                flag2=0;                    //将标志位
+            }
+        }
+    }
+}
+float Plane::rad_diff(float rad1, float rad2)
+{
+    float diff = rad1 - rad2;
+    if (diff > M_PI) {
+        diff -= 2 * M_PI;
+    }
+    if (diff < -M_PI) {
+        diff += 2 * M_PI;
+    }
+    return fabsf(diff);
+}
+#endif
 /*
   return true if we will accept this packet. Used to implement SYSID_ENFORCE
  */

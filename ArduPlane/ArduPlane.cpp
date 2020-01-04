@@ -84,10 +84,11 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(button_update,           5,    100),
     SCHED_TASK(stats_update,            1,    100),
 #if XBEE_TELEM==ENABLED
-//	SCHED_TASK(swarm_control_update,	10,   200),
-//  SCHED_TASK(swarm_test,          	10,   200),     //swarm formation
-//  SCHED_TASK(swarm_test1,          	10,   200),     //swarm allay at home point
-    SCHED_TASK(swarm_test2,          	10,   200),     //signal plane tracking an object
+//	SCHED_TASK(swarm_control_update,	10,   200),     //swarm formation,in GCS_Mavlink.cpp
+//  SCHED_TASK(swarm_test,          	10,   200),     //swarm formation,in ArduPlane.cpp
+//  SCHED_TASK(swarm_test1,          	10,   200),     //swarm allay at home point,in ArduPlane.cpp
+//  SCHED_TASK(swarm_test2,          	10,   200),     //signal plane tracking an object,in ArduPlane.cpp
+    SCHED_TASK(swarm_object_tracking,	10,   200),     //swarm tracking an object,in GCS_Mavlink.cpp
 #endif
 };
 
