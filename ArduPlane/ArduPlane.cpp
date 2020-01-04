@@ -85,8 +85,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(stats_update,            1,    100),
 #if XBEE_TELEM==ENABLED
 //	SCHED_TASK(swarm_control_update,	10,   200),
-//  SCHED_TASK(swarm_test,          	10,   200),     //formation with neighbours
-    SCHED_TASK(swarm_test1,          	10,   200),     //swarm allay at home point
+//  SCHED_TASK(swarm_test,          	10,   200),     //swarm formation
+//  SCHED_TASK(swarm_test1,          	10,   200),     //swarm allay at home point
+    SCHED_TASK(swarm_test2,          	10,   200),     //signal plane tracking an object
 #endif
 };
 
@@ -1071,6 +1072,8 @@ float Plane::tecs_hgt_afe(void)
 }
 
 #if XBEE_TELEM==ENABLED
+
+/* ==================================swarm formation=================================*/
 #define DIS_THRESHOLD 30
 #define DIS_STAB 10
 /*void Plane::swarm_test(void)
@@ -1204,7 +1207,7 @@ void Plane::swarm_test(void)
     plane.reset_offset_altitude();
 }
 
-//swarm allay at home point
+/* ===========================swarm allay at home point(have been test successfully)==========================*/
 void Plane::swarm_test1(void)
 {
     if(control_mode == GUIDED)
@@ -1230,6 +1233,161 @@ void Plane::swarm_test1(void)
         
         loiter_angle_reset();
     }
+} 
+
+/* ======================================signal plane tracking an object================================*/
+//the object velocity is set in macro-define
+#define UGV_x 1.5                    //the object moving velocity x m/s
+#define UGV_y 0                      //the object moving velocity y m/s
+#define TRACKING_DIS 50              //tracking distance m
+void Plane::swarm_test2(void)
+{
+    if(control_mode != GUIDED)return;
+
+     /******************test1:fly along waypoints***************/
+    /* uint32_t now_ms=AP_HAL::micros();                   //
+    static uint32_t last_ms=now_ms;                     //get the time of guided mode
+    const Vector3f& self_vel=gps.velocity();            //get the current plane velocity
+    Location UGV_loc=plane.home;                                   //suppose the object is in home point                           
+    float dt=(now_ms-last_ms)*1.0e-6;                   //dt
+    if(dt>0.2f)
+    {
+        dt=0.0f;
+    }
+    UGV_loc.lat+=UGV_loc.lat+UGV_x*dt/1.113195;
+    UGV_loc.lng+=UGV_loc.lng+UGV_y*dt/1.113195;  
+
+    float h_cmd=30;                     
+    plane.next_WP_loc.lat=UGV_loc.lat;
+    plane.next_WP_loc.lng=UGV_loc.lng;
+    plane.next_WP_loc.alt=int32_t(h_cmd*100);
+    plane.next_WP_loc.alt+=plane.home.alt;
+    plane.next_WP_loc.flags.relative_alt = true;
+    plane.reset_offset_altitude();
+    last_ms=now_ms;*/
+
+    /******************test2:fly with control law*******************/
+
+    //*****************step1:get plane information
+    Location self_loc = plane.current_loc;                      //current position
+    const Vector3f& self_vel=gps.velocity();            //get the current plane velocity
+    int32_t self_hdg = plane.ahrs.yaw_sensor;                   //heading angle:cetidegrees
+    if(self_hdg > 18000)
+        self_hdg = self_hdg - 36000;
+
+    uint32_t now_ms=AP_HAL::micros(); 
+    static uint32_t last_ms=now_ms; 
+
+    float self_speed=sqrtf(powf(self_vel.x,2)+powf(self_vel.y,2)+powf(self_vel.z,2));  //速度标量
+    float self_speed_xy=sqrtf(powf(self_vel.x,2)+powf(self_vel.y,2));                  //水平方向速度
+
+    //****************step2:get UGV information
+    Location UGV_loc;                                   //suppose the object is in home point                           
+    float dt=(now_ms-last_ms)*1.0e-6;                   //dt
+    if(dt>0.2f)
+    {
+        dt=0.0f;
+    }
+    UGV_loc.lat+=UGV_loc.lat+UGV_x*dt/1.113195;
+    UGV_loc.lng+=UGV_loc.lng+UGV_y*dt/1.113195;       
+
+    //****************step3:calculate desire heading angle
+    double r1,r2;
+    float eta;
+    r1=TRACKING_DIS;
+    r2=r1;
+    Vector2f  loc_diff = location_diff(UGV_loc, self_loc);
+
+    //calculate eta
+    double loc_diff_norm=sqrtf(powf(loc_diff.x,2)+powf(loc_diff.y,2));
+    //case 1:
+    if(loc_diff_norm>r1+r2)
+    {   
+        eta=atan2f(loc_diff.y,loc_diff.x);
+    }
+    //case 2:
+    else if(loc_diff_norm<r1-r2)
+    {
+        eta=atan2f(-loc_diff.y,-loc_diff.x);
+    }
+    //case 3:
+    else
+    {
+        float a,b,c,theta1,theta2,theta;
+        a=2*((float)r1)*(loc_diff.x);
+        b=2*((float)r1)*(loc_diff.y);
+        c=powf((float)r2,2)-powf((float)r1,2)-powf(loc_diff.x,2)-powf(loc_diff.y,2);
+
+        theta1=acosf(c/sqrtf(a*a+b*b));
+        theta2=atan2f(b/sqrtf(a*a+b*b),a/sqrtf(a*a+b*b));
+
+        if(theta1+theta2<0)
+        {
+            theta1=theta1+theta2+M_PI*2;
+        }
+        if(theta2-theta1<0)
+        {
+            theta2=-theta1+theta2+M_PI*2;
+        }
+        //sort theta1 & theta2 
+        if(theta1>=theta2)
+        {
+            float temp0;
+            temp0=theta1;
+            theta1=theta2;
+            theta2=temp0;
+        }
+        if(theta2-theta1>M_PI)
+        {
+            theta=theta1;
+        }
+        else
+        {
+            theta=theta2;
+        }
+
+        eta=atan2f(((float)r1)*sinf(theta)+loc_diff.y,((float)r1)*cosf(theta)-loc_diff.x);
+    }
+
+    //*****************step4:non-linear acc calculate
+    float acc,turn_rate;
+    acc=2*powf(self_speed_xy,2)*sinf(eta-self_hdg)/TRACKING_DIS;
+    if(self_speed_xy>30)
+    {
+        self_speed_xy=30;
+    }
+    if(self_speed_xy<10)
+    {
+        self_speed_xy=10;
+    }
+
+    turn_rate=acc/self_speed_xy;                 //水平方向滚转角速度
+    if(turn_rate>M_PI/10)
+    {
+        turn_rate=M_PI/10;
+    }
+    if(turn_rate<-M_PI/10)
+    {
+        turn_rate=-M_PI/10;
+    }
+
+    float v_cmd=sqrtf(powf(self_vel.z,2)+powf(self_vel.x+UGV_x,2)+powf(self_vel.y+UGV_y,2));//目标速度对飞机进行速度校正
+    plane.guided_state.last_forced_throttle_ms=now_ms;
+    plane.guided_state.forced_throttle=(0.5+1*(v_cmd-self_speed))*100.0f;               //速度恒定
+    
+    //heading angle control
+    float phi_cmd=self_hdg+dt*turn_rate;
+    plane.guided_state.last_forced_rpy_ms.x=now_ms;
+    plane.guided_state.forced_rpy_cd.x=int32_t(phi_cmd*18000/M_PI);
+
+    //altitude control
+    float h_cmd=30;
+    plane.next_WP_loc.alt=int32_t(h_cmd*100);
+    plane.next_WP_loc.alt+=plane.home.alt;
+    plane.next_WP_loc.flags.relative_alt = true;
+    plane.reset_offset_altitude();
+
+    last_ms=now_ms;
 }
 #endif
 

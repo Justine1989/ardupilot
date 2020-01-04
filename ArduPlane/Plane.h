@@ -1124,8 +1124,9 @@ private:
 
 #if XBEE_TELEM==ENABLED
 	void swarm_control_update(void);
-    void swarm_test(void);
-    void swarm_test1(void);                 //
+    void swarm_test(void);                  //swarm formation 
+    void swarm_test1(void);                 //swarm allay at home point
+    void swarm_test2(void);                 //signal plane tracking an object
 
 	mavlink_global_position_int_t neighbours[MAX_NEI];
     mavlink_heartbeat_t Neighbours[MAX_NEI];
