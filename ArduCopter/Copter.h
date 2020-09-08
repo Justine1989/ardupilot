@@ -1173,6 +1173,8 @@ private:
 
 	void swarm_formation(void);        //swarm formation
     void swarm_test(void);             //a copter fly with desired velocity
+    void swarm_test2(void);            //a copter fly with desired velocity with a square
+    void swarm_leader_follower(void);
 
 	mavlink_global_position_int_t neighbours[MAX_NEI];
     mavlink_heartbeat_t Neighbours[MAX_NEI];
