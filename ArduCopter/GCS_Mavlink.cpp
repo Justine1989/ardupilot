@@ -1869,13 +1869,6 @@ void GCS_MAVLINK_Copter::update_check_lost_neighbours(void)
 }
 #endif
 
-/* ===========================swarm copter control==========================*/
-#if XBEE_TELEM==ENABLED
-void Copter::swarm_formation(void)
-{
-
-}
-#endif
 /*
   return true if we will accept this packet. Used to implement SYSID_ENFORCE
  */
