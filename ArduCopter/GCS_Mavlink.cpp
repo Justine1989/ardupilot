@@ -168,7 +168,7 @@ void NOINLINE Copter::send_location(mavlink_channel_t chan)
         vel.y,                          // Y speed cm/s (+ve East)
         vel.z,                          // Z speed cm/s (+ve up)
         ahrs.yaw_sensor);               // compass heading in 1/100 degree
-   
+   //mavlink_msg_gps_raw_int_send(chan, time_usec,fix_type, current_loc.lat, current_loc.lng, (ahrs.get_home().alt + current_loc.alt) * 10UL, uint16_t eph, uint16_t epv, uint16_t vel, uint16_t cog, uint8_t satellites_visible)
    #if XBEE_TELEM==ENABLED
     	gcs().chan(MAVLINK_COMM_2).xbee_set_targ_add(0xDFDF);
    #endif

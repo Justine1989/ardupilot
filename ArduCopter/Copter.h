@@ -659,6 +659,9 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
+    bool time_start_flag;
+    uint32_t time_start;
+
     void compass_accumulate(void);
     void compass_cal_update(void);
     void barometer_accumulate(void);
@@ -1175,6 +1178,7 @@ private:
     void swarm_test2(void);            //a copter fly with desired velocity with a square
     void swarm_test3(void);            // a copter fly with desired velocity with a circle
     void swarm_formation(void);        //multiple copters fly with a leader
+    void swarm_formation_v2(void);
 
 	mavlink_global_position_int_t neighbours[MAX_NEI];
     mavlink_heartbeat_t Neighbours[MAX_NEI];

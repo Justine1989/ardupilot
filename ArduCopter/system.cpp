@@ -330,6 +330,9 @@ void Copter::init_ardupilot()
 
     // flag that initialisation has completed
     ap.initialised = true;
+
+    // Time start
+    time_start_flag=false;
 }
 
 
