@@ -1127,6 +1127,7 @@ private:
     void swarm_test(void);                  //swarm formation 
     void swarm_test1(void);                 //swarm allay at home point
     void swarm_test2(void);                 //signal plane tracking an object
+    void swarm_test3(void);                 //get a signal of a copter to allay at home
     void swarm_object_tracking(void);       //swarm tracking an object
     float rad_diff(float rad1, float rad2); //use with function swarm_object_tracking(void)
 
@@ -1135,7 +1136,8 @@ private:
 
 	uint16_t nei_mask;
     uint16_t Nei_mask;
-
+    
+    bool time_start_flag;
 	bool update_neighbours(uint8_t sysid,mavlink_global_position_int_t& nei);       //update neighbours global position
     bool update_neighbours2(uint8_t sysid,mavlink_heartbeat_t& Nei);                //update neighbours flight mode
 	

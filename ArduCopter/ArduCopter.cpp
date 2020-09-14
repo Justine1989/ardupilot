@@ -159,11 +159,11 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(stats_update,           1,    100),
 #if XBEE_TELEM==ENABLED
 //  SCHED_TASK(swarm_formation,        10,    100),             //swarm formation
-    SCHED_TASK(swarm_test,             10,    100),            //a copter fly with desired velocity
-    //SCHED_TASK(swarm_test2, 10,100),
-   //SCHED_TASK(swarm_test3, 10,100),
+    //SCHED_TASK(swarm_test,             10,    100),            //a copter fly with desired velocity
+    //SCHED_TASK(swarm_test2, 10,100),                              //fly a square
+   //SCHED_TASK(swarm_test3, 10,100),                             //fly a circle and land
    //SCHED_TASK(swarm_formation, 10,100),
-   //SCHED_TASK(swarm_formation_v2, 10,100),
+   SCHED_TASK(swarm_formation_v2, 10,100),
 #endif
 };
 
@@ -632,7 +632,10 @@ void Copter::update_altitude()
 void Copter::swarm_test()
 {
     if(copter.control_mode!=GUIDED)
+    {
+        time_start_flag = false;
         return;
+    }
     if(copter.control_mode==GUIDED)
     {
         if(!time_start_flag)
@@ -645,9 +648,6 @@ void Copter::swarm_test()
         uint32_t time_current;
         time_current=AP_HAL::millis();
         uint32_t time_delta=time_current-time_start;
-        /*float yaw_cd = 0.0f;
-        bool yaw_relative = false;
-        float yaw_rate_cds = 0.0f;*/
         Vector3f desire_vel;
         if(time_delta>0  && time_delta<=10000)
         {
@@ -656,6 +656,8 @@ void Copter::swarm_test()
             desire_vel.z=0.0f;
             copter.guided_set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), false, 0, false, 0, false);
         }
+
+        gcs().send_text(MAV_SEVERITY_INFO,"RUNNNING SWARM TEST!"); 
     }
 
 }
@@ -664,7 +666,10 @@ void Copter::swarm_test()
 void Copter::swarm_test2()
 {
     if(copter.control_mode!=GUIDED)
+    {
+        time_start_flag = false;
         return;
+    }
     if(copter.control_mode==GUIDED)
     {
         if(!time_start_flag)
@@ -675,59 +680,56 @@ void Copter::swarm_test2()
         uint32_t time_current;
         time_current=AP_HAL::millis();
         uint32_t time_delta=time_current-time_start;
-        float yaw_cd = 0.0f;
-        bool yaw_relative = false;
-        float yaw_rate_cds = 0.0f;
         Vector3f desire_vel;
-        if(time_delta>0  && time_delta<=10000)
+        if(time_delta>0  && time_delta<=20000)
         {
             desire_vel.x=1.5f;
             desire_vel.y=0.0f;
             desire_vel.z=0.0f;
-            copter.guided_set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), false, yaw_cd, false, yaw_rate_cds, yaw_relativeguided_set_velocit);
+
         }
-        else if(time_delta>10000 && time_delta<=20000)
+        else if(time_delta>20000 && time_delta<=40000)
         {
             desire_vel.x=0.0f;
             desire_vel.y=1.5f;
             desire_vel.z=0.0f;
-            copter.guided_set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), false, yaw_cd, false, yaw_rate_cds, yaw_relative);
         }
-        else if(time_delta>20000 && time_delta<=30000)
+        else if(time_delta>40000 && time_delta<=60000)
         {
             desire_vel.x=-1.5f;
             desire_vel.y=0.0f;
             desire_vel.z=0.0f;
-            copter.guided_set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), false, yaw_cd, false, yaw_rate_cds, yaw_relative);
         }
-        else if(time_delta>30000 && time_delta<=40000)
+        else if(time_delta>60000 && time_delta<=80000)
         {
             desire_vel.x=0.0f;
             desire_vel.y=-1.5f;
             desire_vel.z=0.0f;
-            copter.guided_set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), false, yaw_cd, false, yaw_rate_cds, yaw_relative);
         }
-
+ 
+        copter.guided_set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), false, 0, false, 0, false);
         //land
-        if(time_delta>40000)Vector3f desire_vel;
+        /*if(time_delta>40000)Vector3f desire_vel;
         {
             copter.set_mode(LAVector3f desire_vel;COMMAND);
-        }
+        }*/
         
-    
+        gcs().send_text(MAV_SEVERITY_INFO,"RUNNNING SWARM TEST2!"); 
     }   
 
 }
 
-
 /*==================fly a circle and land================*/
 
-#define CIRCLE_RADIUS 2
+#define CIRCLE_RADIUS 200
 #define OMEGA 1
 void Copter::swarm_test3()
 {
     if(copter.control_mode!=GUIDED)
+    {
+        time_start_flag = false;
         return;
+    }
     if(copter.control_mode==GUIDED)
     {
         if(!time_start_flag)
@@ -738,38 +740,40 @@ void Copter::swarm_test3()
         uint32_t time_current;
         time_current=AP_HAL::millis();
         uint32_t time_delta=time_current-time_start;
-        float yaw_cd = 0.0f;
-        bool yaw_relative = false;
-        float yaw_rate_cds = 0.0f;
+
         Vector3f desire_vel;
         if(time_delta>0  && time_delta<=100000)
         {
             desire_vel.x=OMEGA*CIRCLE_RADIUS*cosf(OMEGA*time_delta);
             desire_vel.y=-OMEGA*CIRCLE_RADIUS*sinf(OMEGA*time_delta);
             desire_vel.z=0.0f;
-            copter.guided_set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), false, yaw_cd, false, yaw_rate_cds, yaw_relative);
+            copter.guided_set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), false, 0, false, 0, false);
         }
         else
         {
             copter.set_mode(LAND, MODE_REASON_GCS_COMMAND);
         }
         
-      gcs().send_text(MAV_SEVERITY_INFO,"RUNNNING SWARM CONTROL!");  
+      gcs().send_text(MAV_SEVERITY_INFO,"RUNNNING SWARM TEST3!"); 
     }
     
 }
 
 /* ===========================swarm copter control==========================*/
-#define DESIRED_X 3
+
+#define DESIRED_X -300
 #define DESIRED_Y 0
 #define GAMA 2
-#define RADIUS 5
-#define OMEGA 1
-int array[2][2]={{0,1},{1,0}};
+//#define CIRCLE_RADIUS 5
+//#define OMEGA 1
+/*uint8_t array[3][3]={{0,0,1},{0,1,0}};
 void Copter::swarm_formation()
 {
     if(copter.control_mode!=GUIDED)
+    {
+        time_start_flag = false;
         return;
+    }
     if(copter.control_mode==GUIDED)
     {
 
@@ -778,11 +782,11 @@ void Copter::swarm_formation()
             time_start=AP_HAL::millis();
             time_start_flag = true;
         }       
-         uint32_t time_current=AP_HAL::millis();
+        uint32_t time_current=AP_HAL::millis();
         uint32_t time_delta=time_current-time_start;
 
-        static uint32_t control_x=RADIUS*OMEGA*cosf(OMEGA*time_delta);
-        static uint32_t control_y=-RADIUS*OMEGA*sinf(OMEGA*time_delta);
+        static uint32_t control_x=CIRCLE_RADIUS*OMEGA*cosf(OMEGA*time_delta);
+        static uint32_t control_y=-CIRCLE_RADIUS*OMEGA*sinf(OMEGA*time_delta);
 
         mavlink_global_position_int_t gpos;
         Location neighbor_loc;
@@ -791,18 +795,15 @@ void Copter::swarm_formation()
         int32_t self_hdg = copter.ahrs.yaw_sensor;                  //cetidegrees
         if(self_hdg > 18000)
             self_hdg = self_hdg - 36000;
-        int32_t hdg_diff = 0;
+        
         const Vector3f &self_vel = gps.velocity();
     
-        Vector2f range = location_diff(self_loc, copter.ahrs.get_home());
+        //Vector2f range = location_diff(self_loc, copter.ahrs.get_home());
 
-        float yaw_cd = 0.0f;
-        bool yaw_relative = false;
-        float yaw_rate_cds = 0.0f;
-         Vector3f desire_vel;
-        for(int i=0;i<MAX_NEI;i++)
+        Vector3f desire_vel;
+        for(int i=1;i<MAX_NEI;i++)
         {
-           for(int j=0;j<MAX_NEI;j++)
+           for(int j=1;j<MAX_NEI;j++)
            {
                 if(array[i][j]==1)
                 {
@@ -822,10 +823,10 @@ void Copter::swarm_formation()
             desire_vel.x=self_vel.x+0.1*control_x;
             desire_vel.y=self_vel.y+0.1*control_y;
             desire_vel.z=0.0f;                
-            copter.guided_set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), true, yaw_cd, true, yaw_rate_cds, yaw_relative);
+            copter.guided_set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), false, 0, false, 0, false);
         }
     }        
-}
+}*/
 //	guided_state.forced_rpy_cd.x = 0;//degrees(q.get_euler_roll()) * 100.0f;
 //	guided_state.forced_rpy_cd.y = 0;//degrees(q.get_euler_pitch()) * 100.0f;
 //	guided_state.forced_rpy_cd.z = 0;//degrees(q.get_euler_yaw()) * 100.0f;
@@ -836,8 +837,8 @@ void Copter::swarm_formation()
 //	guided_state.last_forced_throttle_ms = now;
 
 #define LEADER 1
-#define DESIRED_X -300
-#define DESIRED_Y 0
+//#define DESIRED_X -300
+//#define DESIRED_Y 0
 void Copter::swarm_formation_v2(void)
 {
     if(copter.control_mode==GUIDED)
@@ -854,8 +855,8 @@ void Copter::swarm_formation_v2(void)
             neighbor_vel.z = gpos.vz;
 	        float neighbor_hdg = gpos.hdg / 100 * 3.14159 / 180;
             Vector3f local_des_g;
-	        local_des_g.x = cos(neighbor_hdg)*DESIRED_X - sin(neighbor_hdg)*DESIRED_Y;
-	        local_des_g.y = sin(neighbor_hdg)*DESIRED_X + cos(neighbor_hdg)*DESIRED_Y;
+	        local_des_g.x = cosf(neighbor_hdg)*DESIRED_X - sinf(neighbor_hdg)*DESIRED_Y;
+	        local_des_g.y = sinf(neighbor_hdg)*DESIRED_X + cosf(neighbor_hdg)*DESIRED_Y;
             location_offset(neighbor_loc, local_des_g.x, local_des_g.y);
             Vector3f destination;
             destination.x = neighbor_loc.lat;
@@ -864,10 +865,7 @@ void Copter::swarm_formation_v2(void)
             copter.guided_set_destination_posvel(destination, Vector3f(neighbor_vel.x, neighbor_vel.y, -neighbor_vel.z), false, 0, false, 0, false);
         }
     }
-   
-
 }
-
 
 #endif
 AP_HAL_MAIN_CALLBACKS(&copter);

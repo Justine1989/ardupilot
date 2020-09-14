@@ -88,7 +88,8 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 //  SCHED_TASK(swarm_test,          	10,   200),     //swarm formation,in ArduPlane.cpp
 //  SCHED_TASK(swarm_test1,          	10,   200),     //swarm allay at home point,in ArduPlane.cpp
 //  SCHED_TASK(swarm_test2,          	10,   200),     //signal plane tracking an object,in ArduPlane.cpp
-    SCHED_TASK(swarm_object_tracking,	10,   200),     //swarm tracking an object,in GCS_Mavlink.cpp
+//   SCHED_TASK(swarm_test3,          	10,   200),     //get a copter signal to allay at home point,in ArduPlane.cpp
+  SCHED_TASK(swarm_object_tracking,	10,   200),     //swarm tracking an object,in GCS_Mavlink.cpp
 #endif
 };
 
@@ -1144,6 +1145,7 @@ float Plane::tecs_hgt_afe(void)
     plane.reset_offset_altitude();
 }*/
 
+/******************************swarm formation,in ArduPlane.cpp*************************************/
 #define DISTANCE_SAVE 13
 #define DISTANCE_RANGE 200
 void Plane::swarm_test(void)
@@ -1236,14 +1238,62 @@ void Plane::swarm_test1(void)
     }
 } 
 
+/* ===========================get a copter signal to allay at home point==========================*/
+void Plane::swarm_test3(void)
+{
+    mavlink_heartbeat_t hbt;
+    if(control_mode == GUIDED)
+    {
+        for(int i=0;i<MAX_NEI;i++)
+        {
+            //the sysid of a copter:5
+            if(i==5)
+            {
+                if(get_neighbours2(i,hbt))
+                {
+                    if(hbt.base_mode==GUIDED)
+                    {
+                        gcs().send_text(MAV_SEVERITY_INFO, "GET THE COPTER MODE");
+                        prev_WP_loc = current_loc;
+                        next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, plane.get_RTL_altitude());
+
+                        if (aparm.loiter_radius < 0 || next_WP_loc.flags.loiter_ccw) {
+                            loiter.direction = -1;
+                            } else {
+                                loiter.direction = 1;
+                            }
+
+                        setup_glide_slope();
+                        setup_turn_angle();
+
+                        auto_state.next_wp_no_crosstrack=true;
+                        // reset loiter start time.
+                        loiter.start_time_ms = 0;
+
+                        // start in non-VTOL mode
+                        auto_state.vtol_loiter = false;
+                        
+                        loiter_angle_reset();
+                    }
+                }
+            }
+        }
+    }
+} 
+
 /* ======================================signal plane tracking an object================================*/
 //the object velocity is set in macro-define
 #define UGV_x 1.5                    //the object moving velocity x m/s
 #define UGV_y 0                      //the object moving velocity y m/s
-#define TRACKING_DIS 50              //tracking distance m
+#define TRACKING_DIS 300             //tracking distance cm
 void Plane::swarm_test2(void)
 {
-    if(control_mode != GUIDED)return;
+    if(control_mode != GUIDED)
+    {
+        time_start_flag = false;
+        return;
+    }
+    
 
      /******************test1:fly along waypoints***************/
     /* uint32_t now_ms=AP_HAL::micros();                   //
@@ -1276,8 +1326,14 @@ void Plane::swarm_test2(void)
     if(self_hdg > 18000)
         self_hdg = self_hdg - 36000;
 
-    uint32_t now_ms=AP_HAL::micros(); 
-    static uint32_t last_ms=now_ms; 
+    uint32_t now_ms=AP_HAL::micros();
+    static uint32_t last_ms;
+    if(!time_start_flag)
+    {
+        last_ms=now_ms; 
+        time_start_flag = true;
+    } 
+    
 
     float self_speed=sqrtf(powf(self_vel.x,2)+powf(self_vel.y,2)+powf(self_vel.z,2));  //速度标量
     float self_speed_xy=sqrtf(powf(self_vel.x,2)+powf(self_vel.y,2));                  //水平方向速度
