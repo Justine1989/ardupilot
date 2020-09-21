@@ -1,5 +1,9 @@
 {
     "files.associations": {
-        "type_traits": "cpp"
-    }
+        "type_traits": "cpp",
+        "regex": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp"
+    },
+    "C_Cpp.dimInactiveRegions": true
 }

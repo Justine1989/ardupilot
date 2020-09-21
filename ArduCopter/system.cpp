@@ -333,6 +333,9 @@ void Copter::init_ardupilot()
 
     // Time start
     time_start_flag=false;
+
+    nei_mask=0;
+    Nei_mask=0;
 }
 
 

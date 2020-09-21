@@ -269,6 +269,9 @@ void Plane::init_ardupilot()
 
     // disable safety if requested
     BoardConfig.init_safety();
+
+    nei_mask=0;
+    Nei_mask=0;
 }
 
 //********************************************************************************

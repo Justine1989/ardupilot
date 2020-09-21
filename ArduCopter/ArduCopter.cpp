@@ -744,8 +744,8 @@ void Copter::swarm_test3()
         Vector3f desire_vel;
         if(time_delta>0  && time_delta<=100000)
         {
-            desire_vel.x=OMEGA*CIRCLE_RADIUS*cosf(OMEGA*time_delta);
-            desire_vel.y=-OMEGA*CIRCLE_RADIUS*sinf(OMEGA*time_delta);
+            desire_vel.x=OMEGA*CIRCLE_RADIUS*cosf(OMEGA*time_delta/1000);
+            desire_vel.y=-OMEGA*CIRCLE_RADIUS*sinf(OMEGA*time_delta/1000);
             desire_vel.z=0.0f;
             copter.guided_set_velocity(Vector3f(desire_vel.x * 100.0f, desire_vel.y * 100.0f, -desire_vel.z * 100.0f), false, 0, false, 0, false);
         }
@@ -761,8 +761,8 @@ void Copter::swarm_test3()
 
 /* ===========================swarm copter control==========================*/
 
-#define DESIRED_X -300
-#define DESIRED_Y 0
+#define DESIRED_X -400
+#define DESIRED_Y 400
 #define GAMA 2
 //#define CIRCLE_RADIUS 5
 //#define OMEGA 1
@@ -850,6 +850,10 @@ void Copter::swarm_formation_v2(void)
         {
             neighbor_loc.lat = gpos.lat;
 	        neighbor_loc.lng = gpos.lon;
+            //neighbor_loc.alt = (int32_t)gpos.alt/10;
+            neighbor_loc.alt = copter.ahrs.get_home().alt+800;
+            neighbor_loc.flags.relative_alt = true;
+            neighbor_loc.flags.terrain_alt = false;
 	        neighbor_vel.x = gpos.vx;
 	        neighbor_vel.y = gpos.vy;
             neighbor_vel.z = gpos.vz;
@@ -857,12 +861,11 @@ void Copter::swarm_formation_v2(void)
             Vector3f local_des_g;
 	        local_des_g.x = cosf(neighbor_hdg)*DESIRED_X - sinf(neighbor_hdg)*DESIRED_Y;
 	        local_des_g.y = sinf(neighbor_hdg)*DESIRED_X + cosf(neighbor_hdg)*DESIRED_Y;
-            location_offset(neighbor_loc, local_des_g.x, local_des_g.y);
+            location_offset(neighbor_loc, local_des_g.x/1e2, local_des_g.y/1e2);
             Vector3f destination;
-            destination.x = neighbor_loc.lat;
-            destination.y = neighbor_loc.lng;
-            destination.z = neighbor_loc.alt;
+            destination = copter.pv_location_to_vector(neighbor_loc);
             copter.guided_set_destination_posvel(destination, Vector3f(neighbor_vel.x, neighbor_vel.y, -neighbor_vel.z), false, 0, false, 0, false);
+            gcs().send_text(MAV_SEVERITY_INFO,"RUNNNING FOLLOWER5!");
         }
     }
 }

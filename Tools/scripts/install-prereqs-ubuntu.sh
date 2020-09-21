@@ -84,10 +84,10 @@ fi
 
 sudo usermod -a -G dialout $USER
 
-$APT_GET remove modemmanager
-$APT_GET update
-$APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS
-sudo pip2 -q install -U $PYTHON_PKGS
+#$APT_GET remove modemmanager
+#$APT_GET update
+#$APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS
+sudo pip -q install -U $PYTHON_PKGS
 
 if [ ! -d $OPT/$ARM_ROOT ]; then
     (
