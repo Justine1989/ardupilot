@@ -86,10 +86,10 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if XBEE_TELEM==ENABLED
 //	SCHED_TASK(swarm_control_update,	10,   200),     //swarm formation,in GCS_Mavlink.cpp
 //  SCHED_TASK(swarm_test,          	10,   200),     //swarm formation,in ArduPlane.cpp
-//  SCHED_TASK(swarm_test1,          	10,   200),     //swarm allay at home point,in ArduPlane.cpp
+//    SCHED_TASK(swarm_test1,          	10,   200),     //swarm allay at home point,in ArduPlane.cpp
 //  SCHED_TASK(swarm_test2,          	10,   200),     //signal plane tracking an object,in ArduPlane.cpp
-//   SCHED_TASK(swarm_test3,          	10,   200),     //get a copter signal to allay at home point,in ArduPlane.cpp
-  SCHED_TASK(swarm_object_tracking,	10,   200),     //swarm tracking an object,in GCS_Mavlink.cpp
+   SCHED_TASK(swarm_test3,          	10,   200),     //get a copter signal to allay at home point,in ArduPlane.cpp
+//  SCHED_TASK(swarm_object_tracking,	10,   200),     //swarm tracking an object,in GCS_Mavlink.cpp
 #endif
 };
 
@@ -1246,8 +1246,8 @@ void Plane::swarm_test3(void)
     {
         for(int i=0;i<MAX_NEI;i++)
         {
-            //the sysid of a copter:5
-            if(i==5)
+            //the sysid of a copter:1
+            if(i==1)
             {
                 if(get_neighbours2(i,hbt))
                 {
